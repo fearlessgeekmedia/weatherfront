@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+trap "clear; exit" SIGINT
+
+city="South Salt Lake"
+
+while true
+do
+  clear
+  TERM_COLS=$(tput cols)
+  forecast=$(ansiweather -a false -u imperial -s true -f 5 -l "${city}")
+  currentcond=$(ansiweather -a false -u imperial -s true -h false -p false -d false -H true -l "${city}")
+  echo "=== CURRENT CONDITIONS ==="
+  echo $currentcond | gum style --width $TERM_COLS --background="9"
+  echo
+  echo "=== 5 DAY FORECAST ==="
+  step1=$(echo "$forecast" | sed -E 's/ - ([^0-9])/\n\1/g')
+  step2=$(echo "$step1" | sed 's/Salt Lake City forecast://')
+  formatted_forecast=$(echo "$step2" | sed 's/^[[:space:]]*//')
+  echo -e "$formatted_forecast"
+  echo
+  echo "=== LIVE RADAR ==="
+  gum spin --spinner meter --title "Updating radar" -- curl --silent https://radar.weather.gov/ridge/standard/KMTX_loop.gif | chafa -d 60 --size=60x60
+  echo "Radar data courtesy of NOAA/NWS (weather.gov)"
+done
+
