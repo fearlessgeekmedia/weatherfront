@@ -7,3 +7,10 @@ Right now, this only displays information for Salt Lake City. I will be adding t
 ## Dependencies
 - Ansiweather
 - Gum
+- Chafa
+
+## Optional Dependencies
+- A terminal that supports images, such as Kitty or Ghostty.
+  In terminals that don't support images, the script will display an ANSI-based weather radar.
+
+If you find this script helpful, consider financially supporting it at https://ko-fi.com/fearlessgeekmedia
