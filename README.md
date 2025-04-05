@@ -2,7 +2,15 @@
 
 This is a bash script I created to display current weather conditions, the weather forecast, and a weather radar.
 
-Right now, this only displays information for Salt Lake City. I will be adding the ability to add your location in the future.
+The script now automatically detects your location in the United States of America.
+
+If your location isn't detected properly, you can also feed it your latitude and longitude, for example:
+
+`weatherfront 35 -90`
+
+It also now gives a more detailed forecast. While it still relies on Ansiweather for current weather conditions, it now gets a more detailed forecast from the National Weather Service.
+
+We only have a few maps set up, so unless you're in a lucky area, the maps may not be your area. It's a work in progress. I will get more radar maps added ASAP.
 
 ## Dependencies
 - Ansiweather
