@@ -2,25 +2,202 @@
 
 trap "clear; exit" SIGINT
 
-city="South Salt Lake"
+# Function to detect coordinates automatically
+detect_coordinates() {
+  echo "Detecting your coordinates..."
+  GEO_RESPONSE=$(curl -s https://ipinfo.io)
+  LAT_LONG=$(echo "$GEO_RESPONSE" | jq -r '.loc')
 
-while true
-do
-  clear
-  TERM_COLS=$(tput cols)
-  forecast=$(ansiweather -a false -u imperial -s true -f 5 -l "${city}")
-  currentcond=$(ansiweather -a false -u imperial -s true -h false -p false -d false -H true -l "${city}")
-  echo "=== CURRENT CONDITIONS ==="
-  echo $currentcond | gum style --width $TERM_COLS --background="9"
-  echo
-  echo "=== 5 DAY FORECAST ==="
-  step1=$(echo "$forecast" | sed -E 's/ - ([^0-9])/\n\1/g')
-  step2=$(echo "$step1" | sed 's/Salt Lake City forecast://')
-  formatted_forecast=$(echo "$step2" | sed 's/^[[:space:]]*//')
-  echo -e "$formatted_forecast"
-  echo
-  echo "=== LIVE RADAR ==="
-  gum spin --spinner meter --title "Updating radar" -- curl --silent https://radar.weather.gov/ridge/standard/KMTX_loop.gif | chafa -d 60 --size=60x60
-  echo "Radar data courtesy of NOAA/NWS (weather.gov)"
-done
+  # Validate the response
+  if [ -z "$LAT_LONG" ] || [ "$LAT_LONG" = "null" ]; then
+    echo "Failed to detect your location. Please check your internet connection or try manually providing coordinates."
+    exit 1
+  fi
 
+  LATITUDE=$(echo "$LAT_LONG" | cut -d ',' -f 1)
+  LONGITUDE=$(echo "$LAT_LONG" | cut -d ',' -f 2)
+
+  # Remove trailing zeros from coordinates
+  LATITUDE=$(echo "$LATITUDE" | sed 's/0*$//;s/\.$//')
+  LONGITUDE=$(echo "$LONGITUDE" | sed 's/0*$//;s/\.$//')
+
+  echo "Detected coordinates: $LATITUDE, $LONGITUDE"
+}
+
+# Function to convert state abbreviation to full name
+convert_state_abbreviation() {
+  case "$1" in
+    "AL") echo "Alabama" ;;
+    "AK") echo "Alaska" ;;
+    "AZ") echo "Arizona" ;;
+    "AR") echo "Arkansas" ;;
+    "CA") echo "California" ;;
+    "CO") echo "Colorado" ;;
+    "CT") echo "Connecticut" ;;
+    "DE") echo "Delaware" ;;
+    "FL") echo "Florida" ;;
+    "GA") echo "Georgia" ;;
+    "HI") echo "Hawaii" ;;
+    "ID") echo "Idaho" ;;
+    "IL") echo "Illinois" ;;
+    "IN") echo "Indiana" ;;
+    "IA") echo "Iowa" ;;
+    "KS") echo "Kansas" ;;
+    "KY") echo "Kentucky" ;;
+    "LA") echo "Louisiana" ;;
+    "ME") echo "Maine" ;;
+    "MD") echo "Maryland" ;;
+    "MA") echo "Massachusetts" ;;
+    "MI") echo "Michigan" ;;
+    "MN") echo "Minnesota" ;;
+    "MS") echo "Mississippi" ;;
+    "MO") echo "Missouri" ;;
+    "MT") echo "Montana" ;;
+    "NE") echo "Nebraska" ;;
+    "NV") echo "Nevada" ;;
+    "NH") echo "New Hampshire" ;;
+    "NJ") echo "New Jersey" ;;
+    "NM") echo "New Mexico" ;;
+    "NY") echo "New York" ;;
+    "NC") echo "North Carolina" ;;
+    "ND") echo "North Dakota" ;;
+    "OH") echo "Ohio" ;;
+    "OK") echo "Oklahoma" ;;
+    "OR") echo "Oregon" ;;
+    "PA") echo "Pennsylvania" ;;
+    "RI") echo "Rhode Island" ;;
+    "SC") echo "South Carolina" ;;
+    "SD") echo "South Dakota" ;;
+    "TN") echo "Tennessee" ;;
+    "TX") echo "Texas" ;;
+    "UT") echo "Utah" ;;
+    "VT") echo "Vermont" ;;
+    "VA") echo "Virginia" ;;
+    "WA") echo "Washington" ;;
+    "WV") echo "West Virginia" ;;
+    "WI") echo "Wisconsin" ;;
+    "WY") echo "Wyoming" ;;
+    *) echo "Unknown" ;;
+  esac
+}
+
+# Function to find the nearest radar station
+get_nearest_radar() {
+  LAT="$1"
+  LON="$2"
+
+  # Radar station list (partial example)
+  RADARS=(
+    "TJUA 18.1155 -66.0780"
+    "KMTX 41.262 -112.448" # Salt Lake City
+    "KFTG 39.786 -104.545" # Denver
+    "KLWX 38.976 -77.487"  # Sterling, VA
+    "KRAX 35.877 -78.700"  # Raleigh, NC
+    "KDLH 46.842 -92.210"  # Duluth, MN
+    # Add more radar sites as needed...
+  )
+
+  # Find the closest radar station
+  NEAREST=""
+  MIN_DISTANCE=""
+
+  for RADAR in "${RADARS[@]}"; do
+    IFS=' ' read -r ID RAD_LAT RAD_LON <<< "$RADAR"
+
+    # Calculate the distance (Haversine formula)
+    DIST=$(awk -v lat1="$LAT" -v lon1="$LON" -v lat2="$RAD_LAT" -v lon2="$RAD_LON" '
+      BEGIN {
+        pi = 3.141592653589793
+        R = 6371  # Earth radius in km
+        dlat = (lat2 - lat1) * pi / 180
+        dlon = (lon2 - lon1) * pi / 180
+        a = sin(dlat / 2) ^ 2 + cos(lat1 * pi / 180) * cos(lat2 * pi / 180) * sin(dlon / 2) ^ 2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        print R * c
+      }')
+    if [ -z "$MIN_DISTANCE" ] || (( $(echo "$DIST < $MIN_DISTANCE" | bc -l) )); then
+      MIN_DISTANCE="$DIST"
+      NEAREST="$ID"
+    fi
+  done
+
+  echo "$NEAREST"
+}
+
+display_forecast() {
+  echo "===Forecast for $CITY, $STATE==="
+  echo "$FORECAST" | fold -w 60 -s
+  echo ""
+  echo ""
+}
+
+display_conditions() {
+  echo "===Current contitions for $CITY, $STATE==="
+  ansiweather -l "$CITY, $STATE" -u imperial -a false
+  echo ""
+}
+
+# Check if latitude and longitude are provided
+if [ -z "$1" ] || [ -z "$2" ]; then
+  detect_coordinates
+else
+  LATITUDE="$1"
+  LONGITUDE="$2"
+fi
+
+API_URL="https://api.weather.gov/points/$LATITUDE,$LONGITUDE"
+
+# Fetch forecast metadata
+echo "Fetching forecast data for coordinates: $LATITUDE, $LONGITUDE..."
+RESPONSE=$(curl -s "$API_URL")
+
+# Check if the API call was successful
+if [ $? -ne 0 ] || [ -z "$RESPONSE" ]; then
+  echo "Failed to connect to weather.gov API. Please check your internet connection or the coordinates."
+  exit 1
+fi
+
+# Extract the location (city and state)
+CITY=$(echo "$RESPONSE" | jq -r '.properties.relativeLocation.properties.city')
+STATE_ABBR=$(echo "$RESPONSE" | jq -r '.properties.relativeLocation.properties.state')
+
+# Convert state abbreviation to full name
+STATE=$(convert_state_abbreviation "$STATE_ABBR")
+
+# Extract the forecast URL
+FORECAST_URL=$(echo "$RESPONSE" | jq -r '.properties.forecast')
+
+# Validate the forecast URL
+if [ -z "$FORECAST_URL" ] || [ "$FORECAST_URL" = "null" ]; then
+  echo "Failed to retrieve forecast URL. Please ensure the coordinates are valid."
+  echo "Raw response from the API: $RESPONSE"
+  exit 1
+fi
+
+# Fetch the actual forecast
+FORECAST=$(curl -s "$FORECAST_URL" | jq -r '.properties.periods[] | "\(.name): \(.detailedForecast)"')
+
+# Validate the forecast data
+if [ -z "$FORECAST" ]; then
+  echo "Failed to retrieve weather data. Please try again later."
+  exit 1
+fi
+
+# Find the nearest radar station
+NEAREST_RADAR=$(get_nearest_radar "$LATITUDE" "$LONGITUDE")
+RADAR_URL="https://radar.weather.gov/ridge/standard/${NEAREST_RADAR}_loop.gif"
+
+# Clear screen to prepare for output
+clear
+
+# Display current weather with ansiweather
+displaycond=$(display_conditions | gum style --border "rounded")
+
+# Output the city/state, the forecast, and radar URL
+displayfore=$(display_forecast | gum style --border "rounded")
+
+#display both
+gum join --align left --horizontal "$displayfore" "$displaycond" 
+
+# Show radar loop with gum spinner
+gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 60 --size=60x60
