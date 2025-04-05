@@ -126,14 +126,14 @@ get_nearest_radar() {
 
 display_forecast() {
   echo "===Forecast for $CITY, $STATE==="
-  echo "$FORECAST" | fold -w 60 -s
+  echo "$FORECAST" | fold -w 38 -s
   echo ""
   echo ""
 }
 
 display_conditions() {
   echo "===Current contitions for $CITY, $STATE==="
-  ansiweather -l "$CITY, $STATE" -u imperial -a false
+  ansiweather -l "$CITY, $STATE" -u imperial -a false | fold -w 38 -s
   echo ""
 }
 
