@@ -187,17 +187,24 @@ fi
 NEAREST_RADAR=$(get_nearest_radar "$LATITUDE" "$LONGITUDE")
 RADAR_URL="https://radar.weather.gov/ridge/standard/${NEAREST_RADAR}_loop.gif"
 
-# Clear screen to prepare for output
-clear
+while true
+do
+  # Clear screen to prepare for output
+  clear
+  
+  # Display current weather with ansiweather
+  displaycond=$(display_conditions | gum style --border "rounded")
+  
+  # Output the city/state, the forecast, and radar URL
+  displayfore=$(display_forecast | gum style --border "rounded")
+  
+  #display both
+  gum join --align left --horizontal "$displayfore" "$displaycond"
 
-# Display current weather with ansiweather
-displaycond=$(display_conditions | gum style --border "rounded")
-
-# Output the city/state, the forecast, and radar URL
-displayfore=$(display_forecast | gum style --border "rounded")
-
-#display both
-gum join --align left --horizontal "$displayfore" "$displaycond" 
-
-# Show radar loop with gum spinner
-gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 60 --size=60x60
+  sleep 15
+  clear
+  printf "===Local Radar===\n" 
+  
+  # Show radar loop with gum spinner
+  gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60
+done
