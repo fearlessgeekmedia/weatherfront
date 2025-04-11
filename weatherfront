@@ -89,11 +89,13 @@ get_nearest_radar() {
   # Radar station list (partial example)
   RADARS=(
     "TJUA 18.1155 -66.0780"
-    "KMTX 41.262 -112.448" # Salt Lake City
-    "KFTG 39.786 -104.545" # Denver
-    "KLWX 38.976 -77.487"  # Sterling, VA
-    "KRAX 35.877 -78.700"  # Raleigh, NC
-    "KDLH 46.842 -92.210"  # Duluth, MN
+    "KMTX 41.262 -112.448"    # Salt Lake City
+    "KFTG 39.786 -104.545"    # Denver
+    "KLWX 38.976 -77.487"     # Sterling, VA
+    "KRAX 35.877 -78.700"     # Raleigh, NC
+    "KDLH 46.842 -92.210"     # Duluth, MN
+    "ALASKA 61.217 -149.863"  # Anchorage, AK
+    "KRTX 45.523 -122.676"    # Portland, OR
     # Add more radar sites as needed...
   )
 
