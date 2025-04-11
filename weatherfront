@@ -203,10 +203,10 @@ do
   #display both
   gum join --align left --horizontal "$displayfore" "$displaycond"
 
+  printf "Consider supporting Fearless Geek Media and the development of Weatherfront.\nhttps://ko-fi.com/fearlessgeekmedia"
   sleep 15
   clear
   printf "===Local Radar===\n" 
-  
   # Show radar loop with gum spinner
   gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f kitty
 done
