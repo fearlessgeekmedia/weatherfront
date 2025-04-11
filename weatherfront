@@ -208,5 +208,5 @@ do
   printf "===Local Radar===\n" 
   
   # Show radar loop with gum spinner
-  gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60
+  gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f kitty
 done
