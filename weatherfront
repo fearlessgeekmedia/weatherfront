@@ -96,6 +96,7 @@ get_nearest_radar() {
     "KDLH 46.842 -92.210"     # Duluth, MN
     "ALASKA 61.217 -149.863"  # Anchorage, AK
     "KRTX 45.523 -122.676"    # Portland, OR
+    "KSOX 34.055 -118.243"    # Los Angeles, CA
     # Add more radar sites as needed...
   )
 
@@ -203,7 +204,7 @@ do
   #display both
   gum join --align left --horizontal "$displayfore" "$displaycond"
 
-  printf "Consider supporting Fearless Geek Media and the development of Weatherfront.\nhttps://ko-fi.com/fearlessgeekmedia"
+  printf "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia"
   sleep 15
   clear
   printf "===Local Radar===\n" 
