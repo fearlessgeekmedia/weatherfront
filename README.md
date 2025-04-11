@@ -17,8 +17,8 @@ We only have a few maps set up, so unless you're in a lucky area, the maps may n
 - Gum
 - Chafa
 
-## Optional Dependencies
-- A terminal that supports images, such as Kitty or Ghostty.
-  In terminals that don't support images, the script will display an ANSI-based weather radar.
+## Radar Dependencies
+- A terminal that supports the Kitty Image Protocol, such as Kitty or Ghostty.
+  In terminals that don't support images, the radar will not display.
 
 If you find this script helpful, consider financially supporting it at https://ko-fi.com/fearlessgeekmedia
