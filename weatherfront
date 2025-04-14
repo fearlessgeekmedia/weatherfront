@@ -98,6 +98,7 @@ get_nearest_radar() {
     "KRTX 45.523 -122.676"    # Portland, OR
     "KSOX 34.055 -118.243"    # Los Angeles, CA
     "KOKX 40.730 -73.935"     # New York City
+    "KFWS 32.776 -96.796"     #Dallas, TX
     # Add more radar sites as needed...
   )
 
