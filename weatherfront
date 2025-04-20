@@ -98,7 +98,9 @@ get_nearest_radar() {
     "KRTX 45.523 -122.676"    # Portland, OR
     "KSOX 34.055 -118.243"    # Los Angeles, CA
     "KOKX 40.730 -73.935"     # New York City
-    "KFWS 32.776 -96.796"     #Dallas, TX
+    "KFWS 32.776 -96.796"     # Dallas, TX
+    "KBMX 33.354, -86.780"    # Birmingham, AL
+    "KFFC 33.754, -84.386"    # Atlanta, GA
     # Add more radar sites as needed...
   )
 
@@ -130,15 +132,17 @@ get_nearest_radar() {
 }
 
 display_forecast() {
-  echo "===Forecast for $CITY, $STATE==="
-  echo "$FORECAST" | fold -w 38 -s
+  echo -e "===Forecast===\n$CITY, $STATE"
+  echo "--------------------------------------------------"
+  echo "$FORECAST" | fold -w 48 -s
   echo ""
   echo ""
 }
 
 display_conditions() {
-  echo "===Current contitions for $CITY, $STATE==="
-  ansiweather -l "$CITY, $STATE" -u imperial -a false | fold -w 38 -s
+  echo -e "===Current contitions===\n$CITY, $STATE"
+  echo "------------------------------"
+  ansiweather -l "$CITY, $STATE" -u imperial -a false | fold -w 30 -s
   echo ""
 }
 
@@ -201,7 +205,7 @@ do
   displaycond=$(display_conditions | gum style --border "rounded")
   
   # Output the city/state, the forecast, and radar URL
-  displayfore=$(display_forecast | gum style --border "rounded")
+  displayfore=$(display_forecast | gum style --border "rounded" --width 50)
   
   #display both
   gum join --align left --horizontal "$displayfore" "$displaycond"
