@@ -90,7 +90,7 @@ get_nearest_radar() {
   RADARS=(
     "TJUA 18.1155 -66.0780"
     "KMTX 41.262 -112.448"    # Salt Lake City
-    "KFTG 39.786 -104.545"    # Denver
+    "KFTG 39.786 -104.545"    # Denver, CO
     "KLWX 38.976 -77.487"     # Sterling, VA
     "KRAX 35.877 -78.700"     # Raleigh, NC
     "KDLH 46.842 -92.210"     # Duluth, MN
@@ -99,8 +99,12 @@ get_nearest_radar() {
     "KSOX 34.055 -118.243"    # Los Angeles, CA
     "KOKX 40.730 -73.935"     # New York City
     "KFWS 32.776 -96.796"     # Dallas, TX
-    "KBMX 33.354, -86.780"    # Birmingham, AL
-    "KFFC 33.754, -84.386"    # Atlanta, GA
+    "KBMX 33.354 -86.780"     # Birmingham, AL
+    "KFFC 33.754 -84.386"     # Atlanta, GA
+    "KCBX 43.619 -116.215"    # Boise, ID
+    "KINX 36.154 -95.923"     # Tulsa, OK
+    "KDTX 42.331 -83.046"     # Detroit, MI
+    "KLOT 41.882 -87.623"     # Chicago, IL
     # Add more radar sites as needed...
   )
 
