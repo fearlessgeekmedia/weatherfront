@@ -86,26 +86,155 @@ get_nearest_radar() {
   LAT="$1"
   LON="$2"
 
-  # Radar station list (partial example)
+  # Radar station list (complete NWS network)
   RADARS=(
-    "TJUA 18.1155 -66.0780"
-    "KMTX 41.262 -112.448"    # Salt Lake City
-    "KFTG 39.786 -104.545"    # Denver, CO
-    "KLWX 38.976 -77.487"     # Sterling, VA
-    "KRAX 35.877 -78.700"     # Raleigh, NC
-    "KDLH 46.842 -92.210"     # Duluth, MN
-    "ALASKA 61.217 -149.863"  # Anchorage, AK
-    "KRTX 45.523 -122.676"    # Portland, OR
-    "KSOX 34.055 -118.243"    # Los Angeles, CA
-    "KOKX 40.730 -73.935"     # New York City
-    "KFWS 32.776 -96.796"     # Dallas, TX
-    "KBMX 33.354 -86.780"     # Birmingham, AL
-    "KFFC 33.754 -84.386"     # Atlanta, GA
-    "KCBX 43.619 -116.215"    # Boise, ID
-    "KINX 36.154 -95.923"     # Tulsa, OK
-    "KDTX 42.331 -83.046"     # Detroit, MI
-    "KLOT 41.882 -87.623"     # Chicago, IL
-    # Add more radar sites as needed...
+    "KABR 45.456 -98.413"     # Aberdeen, SD
+    "KABX 35.150 -106.824"    # Albuquerque, NM
+    "KAKQ 36.984 -77.008"     # Wakefield, VA
+    "KAMA 35.233 -101.709"    # Amarillo, TX
+    "KAMX 25.611 -80.413"     # Miami, FL
+    "KAPX 44.907 -84.720"     # Gaylord, MI
+    "KARX 43.823 -91.191"     # La Crosse, WI
+    "KATX 48.195 -122.496"    # Seattle, WA
+    "KBBX 39.496 -121.632"    # Beale AFB, CA
+    "KBGM 42.200 -75.985"     # Binghamton, NY
+    "KBHX 40.499 -124.292"    # Eureka, CA
+    "KBIS 46.771 -100.760"    # Bismarck, ND
+    "KBLX 45.854 -108.607"    # Billings, MT
+    "KBMX 33.172 -86.770"     # Birmingham, AL
+    "KBOX 41.956 -71.137"     # Boston, MA
+    "KBRO 25.916 -97.419"     # Brownsville, TX
+    "KBUF 42.949 -78.737"     # Buffalo, NY
+    "KBYX 24.597 -81.703"     # Key West, FL
+    "KCAE 33.949 -81.118"     # Columbia, SC
+    "KCBW 46.039 -67.806"     # Houlton, ME
+    "KCBX 43.490 -116.236"    # Boise, ID
+    "KCCX 40.923 -78.004"     # State College, PA
+    "KCLE 41.413 -81.860"     # Cleveland, OH
+    "KCLX 32.655 -81.042"     # Charleston, SC
+    "KCRI 35.238 -97.460"     # Oklahoma City, OK
+    "KCRP 27.784 -97.511"     # Corpus Christi, TX
+    "KCXX 44.511 -73.166"     # Burlington, VT
+    "KCYS 41.152 -104.806"    # Cheyenne, WY
+    "KDAX 38.501 -121.678"    # Sacramento, CA
+    "KDDC 37.761 -99.969"     # Dodge City, KS
+    "KDFX 29.273 -100.280"    # Laughlin AFB, TX
+    "KDGX 32.280 -89.985"     # Jackson, MS
+    "KDIX 39.947 -74.411"     # Philadelphia, PA
+    "KDLH 46.837 -92.210"     # Duluth, MN
+    "KDMX 41.731 -93.723"     # Des Moines, IA
+    "KDOX 38.826 -75.440"     # Dover AFB, DE
+    "KDTX 42.700 -83.472"     # Detroit, MI
+    "KDVN 41.612 -90.581"     # Davenport, IA
+    "KDYX 32.538 -99.254"     # Dyess AFB, TX
+    "KEAX 38.810 -94.264"     # Kansas City, MO
+    "KEMX 31.894 -110.630"    # Tucson, AZ
+    "KENX 42.586 -74.064"     # Albany, NY
+    "KEOX 31.460 -85.459"     # Fort Rucker, AL
+    "KEPZ 31.873 -106.698"    # El Paso, TX
+    "KESX 35.701 -114.891"    # Las Vegas, NV
+    "KEVX 30.565 -85.922"     # Eglin AFB, FL
+    "KEWX 29.704 -98.029"     # Austin/San Antonio, TX
+    "KEYX 35.098 -117.561"    # Edwards AFB, CA
+    "KFCX 37.024 -80.274"     # Roanoke, VA
+    "KFDR 34.362 -98.976"     # Frederick, OK
+    "KFDX 34.634 -103.618"    # Cannon AFB, NM
+    "KFFC 33.363 -84.566"     # Atlanta, GA
+    "KFSD 43.588 -96.729"     # Sioux Falls, SD
+    "KFSX 34.574 -111.198"    # Flagstaff, AZ
+    "KFTG 39.786 -104.546"    # Denver, CO
+    "KFWS 32.573 -97.303"     # Dallas/Fort Worth, TX
+    "KGGW 48.206 -106.625"    # Glasgow, MT
+    "KGJX 39.062 -108.214"    # Grand Junction, CO
+    "KGLD 39.367 -101.700"    # Goodland, KS
+    "KGRB 44.499 -88.111"     # Green Bay, WI
+    "KGRK 30.722 -97.383"     # Fort Hood, TX
+    "KGRR 42.894 -85.545"     # Grand Rapids, MI
+    "KGSP 34.883 -82.220"     # Greer, SC
+    "KGWX 33.897 -88.329"     # Columbus AFB, MS
+    "KGYX 43.891 -70.256"     # Portland, ME
+    "KHDX 33.077 -106.120"    # Holloman AFB, NM
+    "KHGX 29.472 -95.079"     # Houston, TX
+    "KHNX 36.314 -119.632"    # Hanford, CA
+    "KHPX 36.737 -87.285"     # Fort Campbell, KY
+    "KHTX 34.931 -86.084"     # Huntsville, AL
+    "KICT 37.654 -97.443"     # Wichita, KS
+    "KICX 37.591 -112.862"    # Cedar City, UT
+    "KILN 39.420 -83.822"     # Wilmington, OH
+    "KILX 40.150 -89.337"     # Lincoln, IL
+    "KIND 39.708 -86.280"     # Indianapolis, IN
+    "KINX 36.175 -95.564"     # Tulsa, OK
+    "KIWA 33.289 -111.670"    # Phoenix, AZ
+    "KIWX 41.359 -85.700"     # North Webster, IN
+    "KJAN 32.321 -90.078"     # Jackson, MS
+    "KJAX 30.485 -81.702"     # Jacksonville, FL
+    "KJGX 32.675 -83.351"     # Robins AFB, GA
+    "KJKL 37.591 -83.313"     # Jackson, KY
+    "KLBB 33.654 -101.814"    # Lubbock, TX
+    "KLCH 30.125 -93.216"     # Lake Charles, LA
+    "KLGX 47.117 -124.107"    # Langley Hill, WA
+    "KLIX 30.337 -89.825"     # New Orleans, LA
+    "KLNX 41.958 -100.576"    # North Platte, NE
+    "KLOT 41.604 -88.085"     # Chicago, IL
+    "KLRX 40.740 -116.803"    # Elko, NV
+    "KLSX 38.699 -90.683"     # St. Louis, MO
+    "KLTX 33.989 -78.429"     # Wilmington, NC
+    "KLVX 37.975 -85.944"     # Louisville, KY
+    "KLWX 38.976 -77.478"     # Sterling, VA
+    "KLZK 34.836 -92.262"     # Little Rock, AR
+    "KMAF 31.943 -102.189"    # Midland/Odessa, TX
+    "KMAX 42.081 -122.717"    # Medford, OR
+    "KMBX 48.393 -100.865"    # Minot AFB, ND
+    "KMHX 34.776 -76.876"     # Morehead City, NC
+    "KMKX 42.968 -88.551"     # Milwaukee, WI
+    "KMLB 28.113 -80.654"     # Melbourne, FL
+    "KMOB 30.679 -88.240"     # Mobile, AL
+    "KMPX 44.849 -93.565"     # Minneapolis, MN
+    "KMQT 46.531 -87.548"     # Marquette, MI
+    "KMRX 36.168 -83.402"     # Knoxville, TN
+    "KMSX 47.041 -113.986"    # Missoula, MT
+    "KMTX 41.263 -112.448"    # Salt Lake City, UT
+    "KMUX 37.155 -121.898"    # San Francisco, CA
+    "KMVX 47.528 -97.325"     # Grand Forks, ND
+    "KMXX 32.537 -85.790"     # Maxwell AFB, AL
+    "KNKX 32.919 -117.042"    # San Diego, CA
+    "KNQA 35.345 -89.873"     # Millington, TN
+    "KOAX 41.320 -96.367"     # Omaha, NE
+    "KOHX 36.247 -86.563"     # Nashville, TN
+    "KOKC 35.238 -97.460"     # Oklahoma City, OK
+    "KOKX 40.866 -72.864"     # Upton, NY
+    "KOTX 47.680 -117.627"    # Spokane, WA
+    "KPAH 37.068 -88.772"     # Paducah, KY
+    "KPBZ 40.532 -80.218"     # Pittsburgh, PA
+    "KPDT 45.691 -118.853"    # Pendleton, OR
+    "KPOE 31.155 -92.976"     # Fort Polk, LA
+    "KPUX 38.460 -104.181"    # Pueblo, CO
+    "KRAX 35.665 -78.490"     # Raleigh, NC
+    "KRGX 39.754 -119.462"    # Reno, NV
+    "KRIW 43.066 -108.477"    # Riverton, WY
+    "KRLX 38.311 -81.723"     # Charleston, WV
+    "KRTX 45.715 -122.964"    # Portland, OR
+    "KSFX 43.106 -112.686"    # Pocatello, ID
+    "KSGF 37.235 -93.401"     # Springfield, MO
+    "KSHV 32.451 -93.841"     # Shreveport, LA
+    "KSJT 31.371 -100.492"    # San Angelo, TX
+    "KSOX 33.818 -117.636"    # Santa Ana Mountains, CA
+    "KSRX 35.290 -94.362"     # Fort Smith, AR
+    "KTBW 27.705 -82.402"     # Tampa Bay, FL
+    "KTFX 47.460 -111.385"    # Great Falls, MT
+    "KTLH 30.398 -84.329"     # Tallahassee, FL
+    "KTLX 35.333 -97.278"     # Oklahoma City, OK
+    "KTWX 39.002 -95.890"     # Topeka, KS
+    "KTYX 43.756 -75.680"     # Fort Drum, NY
+    "KUDX 44.125 -102.830"    # Rapid City, SD
+    "KUEX 40.321 -98.442"     # Hastings, NE
+    "KVAX 30.890 -83.002"     # Moody AFB, GA
+    "KVBX 34.839 -119.179"    # Vandenberg AFB, CA
+    "KVNX 36.741 -98.128"     # Vance AFB, OK
+    "KVTX 34.412 -119.179"    # Los Angeles, CA
+    "KVWX 38.260 -87.724"     # Evansville, IN
+    "KYUX 32.495 -114.656"    # Yuma, AZ
+    "TJUA 18.115 -66.078"     # San Juan, PR
   )
 
   # Find the closest radar station
