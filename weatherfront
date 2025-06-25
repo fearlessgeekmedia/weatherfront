@@ -332,7 +332,8 @@ fetch_forecast_data() {
     if [ -z "$FORECAST_JSON" ]; then
       FORECAST="Could not load forecast."
     else
-      FORECAST=$(echo "$FORECAST_JSON" | jq -r '.properties.periods[] | "\(.name),\(.temperature) \(.temperatureUnit),\(.shortForecast)"' | gum table --columns="Period","Temp","Forecast" --widths=15,8,45)
+      mapfile -t DETAILED_FORECAST < <(echo "$FORECAST_JSON" | jq -r ".properties.periods[].detailedForecast")
+      FORECAST=$(echo "$FORECAST_JSON" | jq -r '.properties.periods[] | "\(.name),\(.temperature) \(.temperatureUnit),\(.shortForecast)"')
       FORECAST_LOADED="true"
     fi
   fi
@@ -359,11 +360,25 @@ do
 
   case "$choice" in
     "Show Forecast")
-      clear
       fetch_forecast_data
-      display_forecast | gum style --border "rounded" --width 50
-      echo "Press enter to return to the main menu."
-      read -r
+      while true; do
+        clear
+        gum style --border "rounded" --width 50 <<< "$FORECAST" | gum table --columns="Period","Temp","Forecast" --widths=15,8,45
+        echo "Select a period to see details, or press Esc to return."
+        choice=$(echo "$FORECAST" | gum choose)
+        if [ -z "$choice" ]; then
+          break
+        fi
+        INDEX=$(echo "$FORECAST" | grep -n "$choice" | cut -d: -f1)
+        INDEX=$((INDEX - 1))
+        clear
+        echo "${DETAILED_FORECAST[$INDEX]}" | gum format -t markdown
+        echo ""
+        sub_choice=$(gum choose "Return to Forecast" "Return to Main Menu")
+        if [ "$sub_choice" = "Return to Main Menu" ]; then
+          break
+        fi
+      done
       ;;
     "Show Radar")
       clear
