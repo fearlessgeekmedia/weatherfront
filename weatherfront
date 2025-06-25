@@ -2,7 +2,28 @@
 
 trap "clear; exit" SIGINT
 
+# Function to check for required commands
+check_dependencies() {
+  local missing_deps=()
+  for cmd in curl jq gum chafa ansiweather; do
+    if ! command -v "$cmd" &> /dev/null; then
+      missing_deps+=("$cmd")
+    fi
+  done
+
+  if [ ${#missing_deps[@]} -ne 0 ]; then
+    echo "Error: The following required commands are not installed:"
+    printf " - %s\n" "${missing_deps[@]}"
+    echo "Please install them to continue."
+    exit 1
+  fi
+}
+
+# Run dependency check
+check_dependencies
+
 # Function to detect coordinates automatically
+
 detect_coordinates() {
   echo "Detecting your coordinates..."
   GEO_RESPONSE=$(curl -s https://ipinfo.io)
