@@ -288,9 +288,7 @@ get_nearest_radar() {
 display_forecast() {
   echo -e "===Forecast===\n$CITY, $STATE"
   echo "--------------------------------------------------"
-  echo "$FORECAST" | fold -w 48 -s
-  echo ""
-  echo ""
+  echo "$FORECAST"
 }
 
 display_conditions() {
@@ -298,6 +296,46 @@ display_conditions() {
   echo "------------------------------"
   ansiweather -l "$CITY, $STATE" -u imperial -a false | fold -w 30 -s
   echo ""
+}
+
+fetch_initial_data() {
+  echo "Fetching location data..."
+  API_URL="https://api.weather.gov/points/$LATITUDE,$LONGITUDE"
+  RESPONSE=$(curl -s "$API_URL")
+
+  if [ $? -ne 0 ] || [ -z "$RESPONSE" ]; then
+    echo "Failed to connect to weather.gov API. Please check your internet connection or the coordinates."
+    exit 1
+  fi
+
+  CITY=$(echo "$RESPONSE" | jq -r '.properties.relativeLocation.properties.city')
+  STATE_ABBR=$(echo "$RESPONSE" | jq -r '.properties.relativeLocation.properties.state')
+  STATE=$(convert_state_abbreviation "$STATE_ABBR")
+  FORECAST_URL=$(echo "$RESPONSE" | jq -r '.properties.forecast')
+
+  if [ -z "$FORECAST_URL" ] || [ "$FORECAST_URL" = "null" ]; then
+    echo "Failed to retrieve forecast URL. Please ensure the coordinates are valid."
+    echo "Raw response from the API: $RESPONSE"
+    exit 1
+  fi
+
+  NEAREST_RADAR=$(get_nearest_radar "$LATITUDE" "$LONGITUDE")
+  RADAR_URL="https://radar.weather.gov/ridge/standard/${NEAREST_RADAR}_loop.gif"
+  FORECAST_LOADED="false"
+}
+
+fetch_forecast_data() {
+  if [ "$FORECAST_LOADED" = "false" ]; then
+    echo "Fetching forecast data..."
+    FORECAST_JSON=$(curl -s "$FORECAST_URL")
+
+    if [ -z "$FORECAST_JSON" ]; then
+      FORECAST="Could not load forecast."
+    else
+      FORECAST=$(echo "$FORECAST_JSON" | jq -r '.properties.periods[] | "\(.name),\(.temperature) \(.temperatureUnit),\(.shortForecast)"' | gum table --columns="Period","Temp","Forecast" --widths=15,8,45)
+      FORECAST_LOADED="true"
+    fi
+  fi
 }
 
 # Check if latitude and longitude are provided
@@ -308,66 +346,38 @@ else
   LONGITUDE="$2"
 fi
 
-API_URL="https://api.weather.gov/points/$LATITUDE,$LONGITUDE"
-
-# Fetch forecast metadata
-echo "Fetching forecast data for coordinates: $LATITUDE, $LONGITUDE..."
-RESPONSE=$(curl -s "$API_URL")
-
-# Check if the API call was successful
-if [ $? -ne 0 ] || [ -z "$RESPONSE" ]; then
-  echo "Failed to connect to weather.gov API. Please check your internet connection or the coordinates."
-  exit 1
-fi
-
-# Extract the location (city and state)
-CITY=$(echo "$RESPONSE" | jq -r '.properties.relativeLocation.properties.city')
-STATE_ABBR=$(echo "$RESPONSE" | jq -r '.properties.relativeLocation.properties.state')
-
-# Convert state abbreviation to full name
-STATE=$(convert_state_abbreviation "$STATE_ABBR")
-
-# Extract the forecast URL
-FORECAST_URL=$(echo "$RESPONSE" | jq -r '.properties.forecast')
-
-# Validate the forecast URL
-if [ -z "$FORECAST_URL" ] || [ "$FORECAST_URL" = "null" ]; then
-  echo "Failed to retrieve forecast URL. Please ensure the coordinates are valid."
-  echo "Raw response from the API: $RESPONSE"
-  exit 1
-fi
-
-# Fetch the actual forecast
-FORECAST=$(curl -s "$FORECAST_URL" | jq -r '.properties.periods[] | "\(.name): \(.detailedForecast)"')
-
-# Validate the forecast data
-if [ -z "$FORECAST" ]; then
-  echo "Failed to retrieve weather data. Please try again later."
-  exit 1
-fi
-
-# Find the nearest radar station
-NEAREST_RADAR=$(get_nearest_radar "$LATITUDE" "$LONGITUDE")
-RADAR_URL="https://radar.weather.gov/ridge/standard/${NEAREST_RADAR}_loop.gif"
+fetch_initial_data
 
 while true
 do
-  # Clear screen to prepare for output
   clear
-  
-  # Display current weather with ansiweather
-  displaycond=$(display_conditions | gum style --border "rounded")
-  
-  # Output the city/state, the forecast, and radar URL
-  displayfore=$(display_forecast | gum style --border "rounded" --width 50)
-  
-  #display both
-  gum join --align left --horizontal "$displayfore" "$displaycond"
+  display_conditions | gum style --border "rounded"
 
-  printf "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia"
-  sleep 15
-  clear
-  printf "===Local Radar===\n" 
-  # Show radar loop with gum spinner
-  gum spin --spinner meter --title "Updating radar" -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f kitty
+  printf "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia\n\n"
+
+  choice=$(gum choose "Show Forecast" "Show Radar" "Refresh" "Quit")
+
+  case "$choice" in
+    "Show Forecast")
+      clear
+      fetch_forecast_data
+      display_forecast | gum style --border "rounded" --width 50
+      echo "Press enter to return to the main menu."
+      read -r
+      ;;
+    "Show Radar")
+      clear
+      printf "===Local Radar===\n"
+      gum spin --spinner meter --title "Loading radar..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f kitty
+      echo "Press enter to return to the main menu."
+      read -r
+      ;;
+    "Refresh")
+      fetch_initial_data
+      ;;
+    "Quit")
+      clear
+      exit 0
+      ;;
+  esac
 done
