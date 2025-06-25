@@ -1,21 +1,35 @@
 # WeatherFront
 
-This is a bash script I created to display current weather conditions, the weather forecast, and a weather radar.
+WeatherFront is a user-friendly, terminal-based weather application that provides current conditions, detailed forecasts, and animated radar imagery, all powered by the National Weather Service (NWS) API. It's designed to be both informative and visually appealing, making it easy to get the weather information you need without leaving your terminal.
 
-The script now automatically detects your location in the United States of America.
+## Key Features
 
-If your location isn't detected properly, you can also feed it your latitude and longitude, for example:
+- **Current Weather Conditions:** Get up-to-the-minute weather information for your location, including temperature, wind speed, and more.
+- **Detailed Forecasts:** View a comprehensive weather forecast, giving you a clear outlook for the coming days.
+- **Animated Radar:** See the latest weather patterns with an animated radar loop for your area.
+- **Automatic Location Detection:** WeatherFront can automatically detect your location, or you can manually specify coordinates.
+- **Interactive Menu:** A simple, clean menu allows you to choose what you want to see, whether it's the forecast, the radar, or you're ready to quit.
 
-`weatherfront 35 -90`
+## Usage
 
-It also now gives a more detailed forecast. While it still relies on Ansiweather for current weather conditions, it now gets a more detailed forecast from the National Weather Service.
+To start WeatherFront, simply run the script:
 
-We only have a few maps set up, so unless you're in a lucky area, the maps may not be your area. It's a work in progress. I will get more radar maps added ASAP.
+```bash
+./weatherfront
+```
+
+If you want to specify your location manually, you can provide the latitude and longitude as arguments:
+
+```bash
+./weatherfront 35 -90
+```
 
 ## Dependencies
 - Ansiweather
 - Gum
 - Chafa
+- curl
+- jq
 
 ## Radar Dependencies
 - A terminal that supports the Kitty Image Protocol, such as Kitty or Ghostty.
