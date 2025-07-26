@@ -102,6 +102,29 @@ convert_state_abbreviation() {
   esac
 }
 
+# Function to get weather icon
+get_weather_icon() {
+  case "$1" in
+    *"Sunny"*) echo "" ;;
+    *"Clear"*) echo "" ;;
+    *"Cloudy"*) echo "" ;;
+    *"Rain"*) echo "" ;;
+    *"Drizzle"*) echo "" ;;
+    *"Thunderstorm"*) echo "" ;;
+    *"Snow"*) echo "" ;;
+    *"Fog"*) echo " fog" ;;
+    *"Mist"*) echo " mist" ;;
+    *"Smoke"*) echo " smoke" ;;
+    *"Haze"*) echo "" ;;
+    *"Dust"*) echo " dust" ;;
+    *"Sand"*) echo " sand" ;;
+    *"Ash"*) echo "🌋" ;;
+    *"Squall"*) echo " squall" ;;
+    *"Tornado"*) echo " tornado" ;;
+    *) echo "" ;;
+  esac
+}
+
 # Function to find the nearest radar station
 get_nearest_radar() {
   LAT="$1"
@@ -292,9 +315,13 @@ display_forecast() {
 }
 
 display_conditions() {
-  echo -e "===Current contitions===\n$CITY, $STATE"
+  CURRENT_CONDITIONS=$(ansiweather -l "$CITY, $STATE" -u imperial -a false)
+  CURRENT_WEATHER=$(echo "$CURRENT_CONDITIONS" | sed -n 's/.*Weather: //p' | sed 's/\x1b\[[0-9;]*m//g')
+  icon=$(get_weather_icon "$CURRENT_WEATHER")
+
+  echo -e "===Current contitions===\n$CITY, $STATE $icon"
   echo "------------------------------"
-  ansiweather -l "$CITY, $STATE" -u imperial -a false | fold -w 30 -s
+  echo "$CURRENT_CONDITIONS" | fold -w 30 -s
   echo ""
 }
 
@@ -369,7 +396,8 @@ do
         echo "--------------------------------------------------"
         # Display forecast data in a simple formatted list
         echo "$FORECAST" | while IFS=',' read -r period temp forecast; do
-          printf "%-20s %-10s %s\n" "$period" "$temp" "$forecast"
+          icon=$(get_weather_icon "$forecast")
+          printf "%s %-20s %-10s %s\n" "$icon" "$period" "$temp" "$forecast"
         done
         echo ""
         echo "Select a period to see details, or press Esc to return."
