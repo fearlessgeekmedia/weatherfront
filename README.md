@@ -25,7 +25,7 @@ If you want to specify your location manually, you can provide the latitude and 
 ```
 
 ## Dependencies
-- Ansiweather
+
 - Gum
 - Chafa
 - curl
