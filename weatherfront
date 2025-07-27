@@ -5,7 +5,7 @@ trap "clear; exit" SIGINT
 # Function to check for required commands
 check_dependencies() {
   local missing_deps=()
-  for cmd in curl jq gum chafa ansiweather; do
+  for cmd in curl jq gum chafa; do
     if ! command -v "$cmd" &> /dev/null; then
       missing_deps+=("$cmd")
     fi
@@ -104,6 +104,7 @@ convert_state_abbreviation() {
 
 # Function to get weather icon
 get_weather_icon() {
+  shopt -s nocasematch
   case "$1" in
     *"Sunny"*) echo "" ;;
     *"Clear"*) echo "" ;;
@@ -123,6 +124,7 @@ get_weather_icon() {
     *"Tornado"*) echo " tornado" ;;
     *) echo "" ;;
   esac
+  shopt -u nocasematch
 }
 
 # Function to find the nearest radar station
@@ -315,13 +317,29 @@ display_forecast() {
 }
 
 display_conditions() {
-  CURRENT_CONDITIONS=$(ansiweather -l "$CITY, $STATE" -u imperial -a false)
-  CURRENT_WEATHER=$(echo "$CURRENT_CONDITIONS" | sed -n 's/.*Weather: //p' | sed 's/\x1b\[[0-9;]*m//g')
+  WTTR_JSON=$(curl -s "wttr.in/$LATITUDE,$LONGITUDE?format=j1")
+
+  if [ -z "$WTTR_JSON" ]; then
+    echo "Failed to get weather data from wttr.in"
+    return
+  fi
+
+  CURRENT_WEATHER=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].weatherDesc[0].value')
+  TEMP_F=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].temp_F')
+  FEELS_LIKE_F=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].FeelsLikeF')
+  HUMIDITY=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].humidity')
+  WIND_SPEED=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].windspeedMiles')
+  WIND_DIR=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].winddir16Point')
+
   icon=$(get_weather_icon "$CURRENT_WEATHER")
 
   echo -e "===Current contitions===\n$CITY, $STATE $icon"
   echo "------------------------------"
-  echo "$CURRENT_CONDITIONS" | fold -w 30 -s
+  echo "Weather: $CURRENT_WEATHER"
+  echo "Temperature: ${TEMP_F}°F"
+  echo "Feels Like: ${FEELS_LIKE_F}°F"
+  echo "Humidity: ${HUMIDITY}%"
+  echo "Wind: ${WIND_SPEED} mph $WIND_DIR"
   echo ""
 }
 
