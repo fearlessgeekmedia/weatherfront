@@ -12,7 +12,7 @@ check_dependencies() {
   done
 
   if [ ${#missing_deps[@]} -ne 0 ]; then
-    echo "Error: The following required commands are not installed:"
+    echo "Error: The following required commands are not installed:" | gum style --foreground "204"
     printf " - %s\n" "${missing_deps[@]}"
     echo "Please install them to continue."
     exit 1
@@ -25,13 +25,13 @@ check_dependencies
 # Function to detect coordinates automatically
 
 detect_coordinates() {
-  echo "Detecting your coordinates..."
+  echo "Detecting your coordinates..." | gum style --foreground "105"
   GEO_RESPONSE=$(curl -s https://ipinfo.io)
   LAT_LONG=$(echo "$GEO_RESPONSE" | jq -r '.loc')
 
   # Validate the response
   if [ -z "$LAT_LONG" ] || [ "$LAT_LONG" = "null" ]; then
-    echo "Failed to detect your location. Please check your internet connection or try manually providing coordinates."
+    echo "Failed to detect your location. Please check your internet connection or try manually providing coordinates." | gum style --foreground "204"
     exit 1
   fi
 
@@ -42,7 +42,7 @@ detect_coordinates() {
   LATITUDE=$(echo "$LATITUDE" | sed 's/0*$//;s/\.$//')
   LONGITUDE=$(echo "$LONGITUDE" | sed 's/0*$//;s/\.$//')
 
-  echo "Detected coordinates: $LATITUDE, $LONGITUDE"
+  echo "Detected coordinates: $(gum style --foreground "105" "$LATITUDE, $LONGITUDE")"
 }
 
 # Function to convert state abbreviation to full name
@@ -320,7 +320,7 @@ display_conditions() {
   WTTR_JSON=$(curl -s "wttr.in/$LATITUDE,$LONGITUDE?format=j1")
 
   if [ -z "$WTTR_JSON" ]; then
-    echo "Failed to get weather data from wttr.in"
+    echo "Failed to get weather data from wttr.in" | gum style --foreground "204"
     return
   fi
 
@@ -333,23 +333,23 @@ display_conditions() {
 
   icon=$(get_weather_icon "$CURRENT_WEATHER")
 
-  echo -e "===Current contitions===\n$CITY, $STATE $icon"
+  echo -e "===Current contitions===\n$(gum style --foreground "99" "$CITY, $STATE") $(gum style --foreground "123" "$icon")" | gum style --bold --foreground "147"
   echo "------------------------------"
-  echo "Weather: $CURRENT_WEATHER"
-  echo "Temperature: ${TEMP_F}°F"
-  echo "Feels Like: ${FEELS_LIKE_F}°F"
-  echo "Humidity: ${HUMIDITY}%"
-  echo "Wind: ${WIND_SPEED} mph $WIND_DIR"
+  echo "Weather: $(gum style --foreground "183" "$CURRENT_WEATHER")"
+  echo "Temperature: $(gum style --foreground "123" "${TEMP_F}°F")"
+  echo "Feels Like: $(gum style --foreground "123" "${FEELS_LIKE_F}°F")"
+  echo "Humidity: $(gum style --foreground "123" "${HUMIDITY}%")"
+  echo "Wind: $(gum style --foreground "123" "${WIND_SPEED} mph $WIND_DIR")"
   echo ""
 }
 
 fetch_initial_data() {
-  echo "Fetching location data..."
+  echo "Fetching location data..." | gum style --foreground "105"
   API_URL="https://api.weather.gov/points/$LATITUDE,$LONGITUDE"
   RESPONSE=$(curl -s "$API_URL")
 
   if [ $? -ne 0 ] || [ -z "$RESPONSE" ]; then
-    echo "Failed to connect to weather.gov API. Please check your internet connection or the coordinates."
+    echo "Failed to connect to weather.gov API. Please check your internet connection or the coordinates." | gum style --foreground "204"
     exit 1
   fi
 
@@ -359,7 +359,7 @@ fetch_initial_data() {
   FORECAST_URL=$(echo "$RESPONSE" | jq -r '.properties.forecast')
 
   if [ -z "$FORECAST_URL" ] || [ "$FORECAST_URL" = "null" ]; then
-    echo "Failed to retrieve forecast URL. Please ensure the coordinates are valid."
+    echo "Failed to retrieve forecast URL. Please ensure the coordinates are valid." | gum style --foreground "204"
     echo "Raw response from the API: $RESPONSE"
     exit 1
   fi
@@ -371,7 +371,7 @@ fetch_initial_data() {
 
 fetch_forecast_data() {
   if [ "$FORECAST_LOADED" = "false" ]; then
-    echo "Fetching forecast data..."
+    echo "Fetching forecast data..." | gum style --foreground "105"
     FORECAST_JSON=$(curl -s "$FORECAST_URL")
 
     if [ -z "$FORECAST_JSON" ]; then
@@ -400,7 +400,7 @@ do
   clear
   display_conditions | gum style --border "rounded"
 
-  printf "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia\n\n"
+  printf "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia\n\n" | gum style --foreground "105"
 
   choice=$(gum choose "Show Forecast" "Show Radar" "Refresh" "Quit")
 
@@ -409,16 +409,16 @@ do
       fetch_forecast_data
       while true; do
         clear
-        echo "=== Forecast ==="
-        echo "$CITY, $STATE"
+        echo "=== Forecast ===" | gum style --bold --foreground "147"
+        echo "$(gum style --foreground "99" "$CITY, $STATE")"
         echo "--------------------------------------------------"
         # Display forecast data in a simple formatted list
         echo "$FORECAST" | while IFS=',' read -r period temp forecast; do
           icon=$(get_weather_icon "$forecast")
-          printf "%s %-20s %-10s %s\n" "$icon" "$period" "$temp" "$forecast"
+          printf "%s %-20s %-10s %s\n" "$(gum style --foreground "99" "$icon")" "$(gum style --foreground "147" "$period")" "$(gum style --foreground "123" "$temp")" "$(gum style --foreground "183" "$forecast")"
         done
         echo ""
-        echo "Select a period to see details, or press Esc to return."
+        echo "Select a period to see details, or press Esc to return." | gum style --foreground "105"
         choice=$(echo "$FORECAST" | gum choose)
         if [ -z "$choice" ]; then
           break
@@ -429,7 +429,7 @@ do
         if [ "$INDEX" -ge 0 ] && [ "$INDEX" -lt ${#DETAILED_FORECAST[@]} ]; then
           echo "${DETAILED_FORECAST[$INDEX]}" | gum format -t markdown
         else
-          echo "Error: Could not retrieve detailed forecast for selected period."
+          echo "Error: Could not retrieve detailed forecast for selected period." | gum style --foreground "204"
         fi
         echo ""
         sub_choice=$(gum choose "Return to Forecast" "Return to Main Menu")
@@ -440,9 +440,9 @@ do
       ;;
     "Show Radar")
       clear
-      printf "===Local Radar===\n"
+      printf "===Local Radar===\n" | gum style --bold --foreground "123"
       gum spin --spinner meter --title "Loading radar..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f kitty
-      echo "Press enter to return to the main menu."
+      echo "Press enter to return to the main menu." | gum style --foreground "105"
       read -r
       ;;
     "Refresh")
