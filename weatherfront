@@ -109,19 +109,19 @@ get_weather_icon() {
     *"Sunny"*) echo "" ;;
     *"Clear"*) echo "" ;;
     *"Cloudy"*) echo "" ;;
-    *"Rain"*) echo "" ;;
-    *"Drizzle"*) echo "" ;;
-    *"Thunderstorm"*) echo "" ;;
+    *"Rain"*) echo "" ;;
+    *"Drizzle"*) echo "" ;;
+    *"Thunderstorm"*) echo "󰙾" ;;
     *"Snow"*) echo "" ;;
-    *"Fog"*) echo " fog" ;;
+    *"Fog"*) echo "󰖑" ;;
     *"Mist"*) echo " mist" ;;
-    *"Smoke"*) echo " smoke" ;;
+    *"Smoke"*) echo "" ;;
     *"Haze"*) echo "" ;;
-    *"Dust"*) echo " dust" ;;
+    *"Dust"*) echo "" ;;
     *"Sand"*) echo " sand" ;;
-    *"Ash"*) echo "🌋" ;;
+    *"Ash"*) echo "" ;;
     *"Squall"*) echo " squall" ;;
-    *"Tornado"*) echo " tornado" ;;
+    *"Tornado"*) echo "󰼸" ;;
     *) echo "" ;;
   esac
   shopt -u nocasematch
