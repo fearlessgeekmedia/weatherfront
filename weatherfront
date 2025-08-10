@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 trap "clear; exit" SIGINT
 
 # Function to check for required commands
 check_dependencies() {
   local missing_deps=()
-  for cmd in curl jq gum chafa; do
+  for cmd in curl jq gum chafa bc; do
     if ! command -v "$cmd" &> /dev/null; then
       missing_deps+=("$cmd")
     fi
@@ -21,6 +22,71 @@ check_dependencies() {
 
 # Run dependency check
 check_dependencies
+
+# Detect terminal image protocol support (kitty/iterm/sixel)
+stdout_is_tty() { [ -t 2 ] || [ -t 1 ] || [ -t 0 ]; }
+
+supports_kitty_images() {
+  stdout_is_tty || return 1
+  # Native Kitty
+  if [ "${TERM:-}" = "xterm-kitty" ] || [ "${TERM:-}" = "kitty" ]; then
+    return 0
+  fi
+  # Kitty remote / control
+  if [ -n "${KITTY_WINDOW_ID:-}" ] || [ -n "${KITTY_LISTEN_ON:-}" ]; then
+    return 0
+  fi
+  # Ghostty implements the Kitty Graphics Protocol
+  if [ "${TERM:-}" = "ghostty" ] || [ "${TERMINAL_EMULATOR:-}" = "Ghostty" ]; then
+    return 0
+  fi
+  return 1
+}
+
+supports_iterm_images() {
+  stdout_is_tty || return 1
+  # iTerm2 and compatible (WezTerm supports iTerm2 inline images)
+  if [ -n "${ITERM_SESSION_ID:-}" ] || [ "${TERM_PROGRAM:-}" = "iTerm.app" ]; then
+    return 0
+  fi
+  if [ -n "${WEZTERM_EXECUTABLE:-}" ] || [ "${TERM_PROGRAM:-}" = "WezTerm" ]; then
+    return 0
+  fi
+  return 1
+}
+
+supports_sixel_images() {
+  stdout_is_tty || return 1
+  case "${TERM:-}" in
+    *sixel*|mlterm|xterm-sixel)
+      return 0 ;;
+  esac
+  return 1
+}
+
+in_multiplexer() {
+  # tmux or screen often break image protocols
+  if [ -n "${TMUX:-}" ] || [[ "${TERM:-}" == screen* ]] || [[ "${TERM:-}" == tmux* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+detect_image_protocol() {
+  if in_multiplexer; then
+    echo "symbols"
+    return
+  fi
+  if supports_kitty_images; then
+    echo "kitty"
+  elif supports_sixel_images; then
+    echo "sixel"
+  else
+    # iTerm/WezTerm support inline images, but chafa may not support that output.
+    # Fall back to text symbols in those cases.
+    echo "symbols"
+  fi
+}
 
 # Function to detect coordinates automatically
 
@@ -333,7 +399,7 @@ display_conditions() {
 
   icon=$(get_weather_icon "$CURRENT_WEATHER")
 
-  echo -e "===Current contitions===\n$(gum style --foreground "99" "$CITY, $STATE") $(gum style --foreground "123" "$icon")" | gum style --bold --foreground "147"
+  echo -e "===Current conditions===\n$(gum style --foreground "99" "$CITY, $STATE") $(gum style --foreground "123" "$icon")" | gum style --bold --foreground "147"
   echo "------------------------------"
   echo "Weather: $(gum style --foreground "183" "$CURRENT_WEATHER")"
   echo "Temperature: $(gum style --foreground "123" "${TEMP_F}°F")"
@@ -386,7 +452,7 @@ fetch_forecast_data() {
 }
 
 # Check if latitude and longitude are provided
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ "$#" -lt 2 ]; then
   detect_coordinates
 else
   LATITUDE="$1"
@@ -423,7 +489,7 @@ do
         if [ -z "$choice" ]; then
           break
         fi
-        INDEX=$(echo "$FORECAST" | grep -n "$choice" | cut -d: -f1)
+        INDEX=$(echo "$FORECAST" | grep -nF -- "$choice" | cut -d: -f1)
         INDEX=$((INDEX - 1))
         clear
         if [ "$INDEX" -ge 0 ] && [ "$INDEX" -lt ${#DETAILED_FORECAST[@]} ]; then
@@ -441,7 +507,18 @@ do
     "Show Radar")
       clear
       printf "===Local Radar===\n" | gum style --bold --foreground "123"
-      gum spin --spinner meter --title "Loading radar..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f kitty
+      IMG_FORMAT=${WEATHERFRONT_IMAGE_FORMAT:-$(detect_image_protocol)}
+      if [ "$IMG_FORMAT" = "symbols" ]; then
+        gum spin --spinner meter --title "Loading radar (text fallback)..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f symbols -c 256
+        if in_multiplexer; then
+          echo "Note: Running inside tmux/screen. Image protocols are generally not supported through multiplexers." | gum style --foreground "105"
+          echo "      Try outside tmux or force text with WEATHERFRONT_IMAGE_FORMAT=symbols." | gum style --foreground "105"
+        else
+          echo "Tip: Use a terminal with Kitty/SIXEL image support (Kitty, Ghostty) for richer radar." | gum style --foreground "105"
+        fi
+      else
+        gum spin --spinner meter --title "Loading radar..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f "$IMG_FORMAT"
+      fi
       echo "Press enter to return to the main menu." | gum style --foreground "105"
       read -r
       ;;
