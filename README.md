@@ -30,9 +30,21 @@ If you want to specify your location manually, you can provide the latitude and 
 - Chafa
 - curl
 - jq
+- bc
 
-## Radar Dependencies
-- A terminal that supports the Kitty Image Protocol, such as Kitty or Ghostty.
-  In terminals that don't support images, the radar will not display.
+## Image output and radar
+
+- WeatherFront auto-detects terminal image support:
+  - Kitty protocol: Kitty, Ghostty
+  - SIXEL: XTerm (built with SIXEL), mlterm, WezTerm (enable in config), Konsole (recent builds), Contour, mintty (newer releases), st (patched)
+  - If neither is detected, radar falls back to high-quality text/ANSI via Chafa symbols.
+- Multiplexers: tmux/screen often block image protocols; run outside them for images.
+- Override detection if needed:
+
+  ```bash
+  WEATHERFRONT_IMAGE_FORMAT=kitty ./weatherfront   # or: sixel | symbols
+  ```
+
+- Ensure your Chafa build supports the desired output: `chafa -f kitty` or `chafa -f sixel`.
 
 If you find this script helpful, consider financially supporting it at https://ko-fi.com/fearlessgeekmedia
