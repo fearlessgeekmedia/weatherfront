@@ -24,7 +24,55 @@ If you want to specify your location manually, you can provide the latitude and 
 ./weatherfront 35 -90
 ```
 
-## Dependencies
+## Installation
+
+### Using Nix (Recommended)
+
+If you have Nix installed, you can run WeatherFront directly without installing dependencies:
+
+```bash
+# Run directly from GitHub (replace with your actual GitHub username/repo)
+nix run github:yourusername/weatherfront
+
+# Or clone and run locally
+git clone https://github.com/yourusername/weatherfront.git
+cd weatherfront
+nix run .
+```
+
+### NixOS System Installation
+
+Add to your NixOS configuration:
+
+```nix
+# In your configuration.nix or flake.nix
+{
+  inputs.weatherfront.url = "github:yourusername/weatherfront";
+  
+  # Then in your system packages:
+  environment.systemPackages = [
+    inputs.weatherfront.packages.${system}.default
+  ];
+}
+```
+
+### Development Environment
+
+For development with all dependencies available:
+
+```bash
+# Enter development shell
+nix develop
+
+# Or with direnv (if .envrc is present)
+direnv allow
+```
+
+**Note:** The `flake.lock` file ensures reproducible builds by pinning exact versions of all dependencies. It should be committed to version control.
+
+### Manual Installation
+
+If you prefer not to use Nix, you'll need to install the following dependencies:
 
 - Gum
 - Chafa
