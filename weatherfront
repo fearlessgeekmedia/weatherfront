@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-trap "clear; exit" SIGINT
+trap "printf '\033[2J\033[H'; exit" SIGINT
 
 # Function to check for required commands
 check_dependencies() {
@@ -13,7 +13,7 @@ check_dependencies() {
   done
 
   if [ ${#missing_deps[@]} -ne 0 ]; then
-    echo "Error: The following required commands are not installed:" | gum style --foreground "204"
+    gum style --foreground "204" "Error: The following required commands are not installed:"
     printf " - %s\n" "${missing_deps[@]}"
     echo "Please install them to continue."
     exit 1
@@ -91,13 +91,13 @@ detect_image_protocol() {
 # Function to detect coordinates automatically
 
 detect_coordinates() {
-  echo "Detecting your coordinates..." | gum style --foreground "105"
-  GEO_RESPONSE=$(curl -s https://ipinfo.io)
+  gum style --foreground "105" "Detecting your coordinates..."
+  GEO_RESPONSE=$(curl -s --max-time 10 https://ipinfo.io)
   LAT_LONG=$(echo "$GEO_RESPONSE" | jq -r '.loc')
 
   # Validate the response
   if [ -z "$LAT_LONG" ] || [ "$LAT_LONG" = "null" ]; then
-    echo "Failed to detect your location. Please check your internet connection or try manually providing coordinates." | gum style --foreground "204"
+    gum style --foreground "204" "Failed to detect your location. Please check your internet connection or try manually providing coordinates."
     exit 1
   fi
 
@@ -382,40 +382,112 @@ display_forecast() {
   echo "$FORECAST"
 }
 
-display_conditions() {
-  WTTR_JSON=$(curl -s "wttr.in/$LATITUDE,$LONGITUDE?format=j1")
+# Function to get current conditions from NWS API
+get_nws_current_conditions() {
+  local grid_data_url="$1"
+  
+  # Get current conditions from NWS grid data
+  local nws_data=$(curl -s --max-time 10 "$grid_data_url")
+  
+  if [ -z "$nws_data" ] || ! echo "$nws_data" | jq empty 2>/dev/null; then
+    return 1
+  fi
+  
+  # Extract current values (first entry in the values array)
+  local temp_c=$(echo "$nws_data" | jq -r '.properties.temperature.values[0].value // empty')
+  local wind_speed_ms=$(echo "$nws_data" | jq -r '.properties.windSpeed.values[0].value // empty')
+  local wind_direction=$(echo "$nws_data" | jq -r '.properties.windDirection.values[0].value // empty')
+  local humidity=$(echo "$nws_data" | jq -r '.properties.relativeHumidity.values[0].value // empty')
+  local weather_desc=$(echo "$nws_data" | jq -r '.properties.weather.values[0].weather // empty')
+  
+  # Convert temperature from Celsius to Fahrenheit
+  if [ -n "$temp_c" ] && [ "$temp_c" != "null" ]; then
+    TEMP_F=$(echo "scale=1; ($temp_c * 9/5) + 32" | bc -l)
+  else
+    TEMP_F="N/A"
+  fi
+  
+  # Convert wind speed from m/s to mph
+  if [ -n "$wind_speed_ms" ] && [ "$wind_speed_ms" != "null" ]; then
+    WIND_SPEED=$(echo "scale=1; $wind_speed_ms * 2.237" | bc -l)
+  else
+    WIND_SPEED="N/A"
+  fi
+  
+  # Convert wind direction from degrees to compass direction
+  if [ -n "$wind_direction" ] && [ "$wind_direction" != "null" ]; then
+    WIND_DIR=$(convert_wind_direction "$wind_direction")
+  else
+    WIND_DIR="N/A"
+  fi
+  
+  # Set humidity
+  if [ -n "$humidity" ] && [ "$humidity" != "null" ]; then
+    HUMIDITY="$humidity"
+  else
+    HUMIDITY="N/A"
+  fi
+  
+  # Set weather description
+  if [ -n "$weather_desc" ] && [ "$weather_desc" != "null" ]; then
+    CURRENT_WEATHER="$weather_desc"
+  else
+    CURRENT_WEATHER="Clear"
+  fi
+  
+  return 0
+}
 
-  if [ -z "$WTTR_JSON" ]; then
-    echo "Failed to get weather data from wttr.in" | gum style --foreground "204"
+# Function to convert wind direction from degrees to compass direction
+convert_wind_direction() {
+  local degrees="$1"
+  local directions=("N" "NNE" "NE" "ENE" "E" "ESE" "SE" "SSE" "S" "SSW" "SW" "WSW" "W" "WNW" "NW" "NNW")
+  local index=$(echo "scale=0; ($degrees + 11.25) / 22.5" | bc -l)
+  if [ "$index" -ge 16 ]; then
+    index=0
+  fi
+  echo "${directions[$index]}"
+}
+
+display_conditions() {
+  # Get the grid data URL from the initial API response
+  local grid_data_url=$(curl -s --max-time 10 "https://api.weather.gov/points/$LATITUDE,$LONGITUDE" | jq -r '.properties.forecastGridData')
+  
+  if [ -z "$grid_data_url" ] || [ "$grid_data_url" = "null" ]; then
+    echo -e "===Current conditions===\n$(gum style --foreground "99" "$CITY, $STATE") $(gum style --foreground "123" "?")" | gum style --bold --foreground "147"
+    echo "------------------------------"
+    gum style --foreground "204" "Failed to get weather data from National Weather Service"
+    echo ""
     return
   fi
-
-  CURRENT_WEATHER=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].weatherDesc[0].value')
-  TEMP_F=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].temp_F')
-  FEELS_LIKE_F=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].FeelsLikeF')
-  HUMIDITY=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].humidity')
-  WIND_SPEED=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].windspeedMiles')
-  WIND_DIR=$(echo "$WTTR_JSON" | jq -r '.current_condition[0].winddir16Point')
-
+  
+  # Get current conditions from NWS
+  if ! get_nws_current_conditions "$grid_data_url"; then
+    echo -e "===Current conditions===\n$(gum style --foreground "99" "$CITY, $STATE") $(gum style --foreground "123" "?")" | gum style --bold --foreground "147"
+    echo "------------------------------"
+    gum style --foreground "204" "Failed to get weather data from National Weather Service"
+    echo ""
+    return
+  fi
+  
   icon=$(get_weather_icon "$CURRENT_WEATHER")
 
   echo -e "===Current conditions===\n$(gum style --foreground "99" "$CITY, $STATE") $(gum style --foreground "123" "$icon")" | gum style --bold --foreground "147"
   echo "------------------------------"
   echo "Weather: $(gum style --foreground "183" "$CURRENT_WEATHER")"
   echo "Temperature: $(gum style --foreground "123" "${TEMP_F}°F")"
-  echo "Feels Like: $(gum style --foreground "123" "${FEELS_LIKE_F}°F")"
   echo "Humidity: $(gum style --foreground "123" "${HUMIDITY}%")"
   echo "Wind: $(gum style --foreground "123" "${WIND_SPEED} mph $WIND_DIR")"
   echo ""
 }
 
 fetch_initial_data() {
-  echo "Fetching location data..." | gum style --foreground "105"
+  gum style --foreground "105" "Fetching location data..."
   API_URL="https://api.weather.gov/points/$LATITUDE,$LONGITUDE"
-  RESPONSE=$(curl -s "$API_URL")
+  RESPONSE=$(curl -s --max-time 10 "$API_URL")
 
   if [ $? -ne 0 ] || [ -z "$RESPONSE" ]; then
-    echo "Failed to connect to weather.gov API. Please check your internet connection or the coordinates." | gum style --foreground "204"
+    gum style --foreground "204" "Failed to connect to weather.gov API. Please check your internet connection or the coordinates."
     exit 1
   fi
 
@@ -425,7 +497,7 @@ fetch_initial_data() {
   FORECAST_URL=$(echo "$RESPONSE" | jq -r '.properties.forecast')
 
   if [ -z "$FORECAST_URL" ] || [ "$FORECAST_URL" = "null" ]; then
-    echo "Failed to retrieve forecast URL. Please ensure the coordinates are valid." | gum style --foreground "204"
+    gum style --foreground "204" "Failed to retrieve forecast URL. Please ensure the coordinates are valid."
     echo "Raw response from the API: $RESPONSE"
     exit 1
   fi
@@ -437,8 +509,8 @@ fetch_initial_data() {
 
 fetch_forecast_data() {
   if [ "$FORECAST_LOADED" = "false" ]; then
-    echo "Fetching forecast data..." | gum style --foreground "105"
-    FORECAST_JSON=$(curl -s "$FORECAST_URL")
+    gum style --foreground "105" "Fetching forecast data..."
+    FORECAST_JSON=$(curl -s --max-time 10 "$FORECAST_URL")
 
     if [ -z "$FORECAST_JSON" ]; then
       FORECAST="Could not load forecast."
@@ -463,10 +535,10 @@ fetch_initial_data
 
 while true
 do
-  clear
+  printf "\033[2J\033[H"  # Clear screen and move cursor to top
   display_conditions | gum style --border "rounded"
 
-  printf "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia\n\n" | gum style --foreground "105"
+  gum style --foreground "105" "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia\n\n"
 
   choice=$(gum choose "Show Forecast" "Show Radar" "Refresh" "Quit")
 
@@ -474,8 +546,8 @@ do
     "Show Forecast")
       fetch_forecast_data
       while true; do
-        clear
-        echo "=== Forecast ===" | gum style --bold --foreground "147"
+        printf "\033[2J\033[H"  # Clear screen and move cursor to top
+        gum style --bold --foreground "147" "=== Forecast ==="
         echo "$(gum style --foreground "99" "$CITY, $STATE")"
         echo "--------------------------------------------------"
         # Display forecast data in a simple formatted list
@@ -484,18 +556,18 @@ do
           printf "%s %-20s %-10s %s\n" "$(gum style --foreground "99" "$icon")" "$(gum style --foreground "147" "$period")" "$(gum style --foreground "123" "$temp")" "$(gum style --foreground "183" "$forecast")"
         done
         echo ""
-        echo "Select a period to see details, or press Esc to return." | gum style --foreground "105"
+        gum style --foreground "105" "Select a period to see details, or press Esc to return."
         choice=$(echo "$FORECAST" | gum choose)
         if [ -z "$choice" ]; then
           break
         fi
         INDEX=$(echo "$FORECAST" | grep -nF -- "$choice" | cut -d: -f1)
         INDEX=$((INDEX - 1))
-        clear
+        printf "\033[2J\033[H"  # Clear screen and move cursor to top
         if [ "$INDEX" -ge 0 ] && [ "$INDEX" -lt ${#DETAILED_FORECAST[@]} ]; then
           echo "${DETAILED_FORECAST[$INDEX]}" | gum format -t markdown
         else
-          echo "Error: Could not retrieve detailed forecast for selected period." | gum style --foreground "204"
+          gum style --foreground "204" "Error: Could not retrieve detailed forecast for selected period."
         fi
         echo ""
         sub_choice=$(gum choose "Return to Forecast" "Return to Main Menu")
@@ -505,28 +577,28 @@ do
       done
       ;;
     "Show Radar")
-      clear
-      printf "===Local Radar===\n" | gum style --bold --foreground "123"
+      printf "\033[2J\033[H"  # Clear screen and move cursor to top
+      gum style --bold --foreground "123" "===Local Radar===\n"
       IMG_FORMAT=${WEATHERFRONT_IMAGE_FORMAT:-$(detect_image_protocol)}
       if [ "$IMG_FORMAT" = "symbols" ]; then
         gum spin --spinner meter --title "Loading radar (text fallback)..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f symbols -c 256
         if in_multiplexer; then
-          echo "Note: Running inside tmux/screen. Image protocols are generally not supported through multiplexers." | gum style --foreground "105"
-          echo "      Try outside tmux or force text with WEATHERFRONT_IMAGE_FORMAT=symbols." | gum style --foreground "105"
+          gum style --foreground "105" "Note: Running inside tmux/screen. Image protocols are generally not supported through multiplexers."
+          gum style --foreground "105" "      Try outside tmux or force text with WEATHERFRONT_IMAGE_FORMAT=symbols."
         else
-          echo "Tip: Use a terminal with Kitty/SIXEL image support (Kitty, Ghostty) for richer radar." | gum style --foreground "105"
+          gum style --foreground "105" "Tip: Use a terminal with Kitty/SIXEL image support (Kitty, Ghostty) for richer radar."
         fi
       else
         gum spin --spinner meter --title "Loading radar..." -- curl --silent "$RADAR_URL" | chafa -d 15 --size=60x60 -f "$IMG_FORMAT"
       fi
-      echo "Press enter to return to the main menu." | gum style --foreground "105"
+      gum style --foreground "105" "Press enter to return to the main menu."
       read -r
       ;;
     "Refresh")
       fetch_initial_data
       ;;
     "Quit")
-      clear
+      printf "\033[2J\033[H"  # Clear screen and move cursor to top
       exit 0
       ;;
   esac

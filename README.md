@@ -31,13 +31,25 @@ If you want to specify your location manually, you can provide the latitude and 
 If you have Nix installed, you can run WeatherFront directly without installing dependencies:
 
 ```bash
-# Run directly from GitHub (replace with your actual GitHub username/repo)
-nix run github:yourusername/weatherfront
+# Run directly from GitHub
+nix run github:fearlessgeek/weatherfront
 
 # Or clone and run locally
-git clone https://github.com/yourusername/weatherfront.git
+git clone https://github.com/fearlessgeek/weatherfront.git
 cd weatherfront
 nix run .
+```
+
+### Install with Nix
+
+To install WeatherFront permanently:
+
+```bash
+# Install to your user profile
+nix profile install github:fearlessgeek/weatherfront
+
+# Or install system-wide (requires sudo)
+nix-env -iA nixpkgs.weatherfront
 ```
 
 ### NixOS System Installation
@@ -47,13 +59,41 @@ Add to your NixOS configuration:
 ```nix
 # In your configuration.nix or flake.nix
 {
-  inputs.weatherfront.url = "github:yourusername/weatherfront";
+  inputs.weatherfront.url = "github:fearlessgeek/weatherfront";
   
   # Then in your system packages:
   environment.systemPackages = [
     inputs.weatherfront.packages.${system}.default
   ];
 }
+```
+
+### Quick Installation Script
+
+For a quick installation with automatic testing:
+
+```bash
+git clone https://github.com/fearlessgeek/weatherfront.git
+cd weatherfront
+./install.sh
+```
+
+### Manual Installation
+
+If you prefer to install manually, ensure you have the following dependencies:
+
+- `bash`
+- `curl`
+- `jq`
+- `gum`
+- `chafa`
+- `bc`
+
+Then simply make the script executable and run it:
+
+```bash
+chmod +x weatherfront
+./weatherfront
 ```
 
 ### Development Environment
