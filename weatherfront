@@ -393,12 +393,25 @@ get_nws_current_conditions() {
     return 1
   fi
   
-  # Extract current values (first entry in the values array)
-  local temp_c=$(echo "$nws_data" | jq -r '.properties.temperature.values[0].value // empty')
-  local wind_speed_ms=$(echo "$nws_data" | jq -r '.properties.windSpeed.values[0].value // empty')
-  local wind_direction=$(echo "$nws_data" | jq -r '.properties.windDirection.values[0].value // empty')
-  local humidity=$(echo "$nws_data" | jq -r '.properties.relativeHumidity.values[0].value // empty')
-  local weather_desc=$(echo "$nws_data" | jq -r '.properties.weather.values[0].weather // empty')
+  # Get current UTC time
+  local current_time=$(date -u +"%Y-%m-%dT%H:%M:%S")
+  
+  # Find the temperature value closest to current time
+  local temp_c=$(echo "$nws_data" | jq -r --arg current_time "$current_time" '
+    .properties.temperature.values[] | 
+    select(.validTime | startswith($current_time[0:13])) | 
+    .value' | head -1)
+  
+  # If no exact match, get the most recent temperature
+  if [ -z "$temp_c" ] || [ "$temp_c" = "null" ]; then
+    temp_c=$(echo "$nws_data" | jq -r '.properties.temperature.values[-1].value // empty')
+  fi
+  
+  # Extract other current values (use most recent for consistency)
+  local wind_speed_ms=$(echo "$nws_data" | jq -r '.properties.windSpeed.values[-1].value // empty')
+  local wind_direction=$(echo "$nws_data" | jq -r '.properties.windDirection.values[-1].value // empty')
+  local humidity=$(echo "$nws_data" | jq -r '.properties.relativeHumidity.values[-1].value // empty')
+  local weather_desc=$(echo "$nws_data" | jq -r '.properties.weather.values[-1].weather // empty')
   
   # Convert temperature from Celsius to Fahrenheit
   if [ -n "$temp_c" ] && [ "$temp_c" != "null" ]; then

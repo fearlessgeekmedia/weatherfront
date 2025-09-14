@@ -13,7 +13,7 @@
 
         weatherfront = pkgs.stdenv.mkDerivation rec {
           pname = "weatherfront";
-          version = "1.0.0";
+          version = "1.0.2";
 
           src = ./.;
 
@@ -52,6 +52,9 @@
               by the National Weather Service (NWS) API. It features automatic location detection,
               animated radar loops, and support for various terminal image protocols including
               Kitty and SIXEL.
+              
+              Version 1.0.2 fixes temperature accuracy by selecting current time data instead
+              of outdated historical values from the NWS API.
             '';
             homepage = "https://github.com/fearlessgeek/weatherfront";
             license = licenses.mit;
