@@ -551,7 +551,7 @@ do
   printf "\033[2J\033[H"  # Clear screen and move cursor to top
   display_conditions | gum style --border "rounded"
 
-  gum style --foreground "105" "Consider supporting Fearless Geek Media and the development of WeatherFront.\nhttps://ko-fi.com/fearlessgeekmedia\n\n"
+  gum style --foreground "105" "Consider supporting Fearless Geek Media and the development of WeatherFront. https://ko-fi.com/fearlessgeekmedia"
 
   choice=$(gum choose "Show Forecast" "Show Radar" "Refresh" "Quit")
 
