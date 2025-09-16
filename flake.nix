@@ -13,7 +13,7 @@
 
         weatherfront = pkgs.stdenv.mkDerivation rec {
           pname = "weatherfront";
-          version = "1.0.2";
+          version = "1.0.3";
 
           src = ./.;
 
@@ -53,8 +53,8 @@
               animated radar loops, and support for various terminal image protocols including
               Kitty and SIXEL.
               
-              Version 1.0.2 fixes temperature accuracy by selecting current time data instead
-              of outdated historical values from the NWS API.
+              Version 1.0.3 includes improvements to temperature accuracy and data selection
+              from the NWS API for more reliable current conditions.
             '';
             homepage = "https://github.com/fearlessgeek/weatherfront";
             license = licenses.mit;
