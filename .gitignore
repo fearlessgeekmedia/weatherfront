@@ -1,1 +1,4 @@
 .crush/
+.direnv/
+result
+result-*
