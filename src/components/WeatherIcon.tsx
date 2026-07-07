@@ -29,12 +29,29 @@ function pickIcon(lower: string): keyof IconMap {
   return "default";
 }
 
-export function getWeatherIcon(condition: string): string {
+export function getWeatherIcon(condition: string, isDaytime?: boolean): string {
   const lower = condition.toLowerCase();
-  return ICONS[pickIcon(lower)];
+  let isNight = false;
+  let stripped = lower;
+
+  if (lower.startsWith("night_")) {
+    isNight = true;
+    stripped = lower.slice(6);
+  } else if (lower.startsWith("day_")) {
+    isNight = false;
+    stripped = lower.slice(4);
+  } else {
+    isNight = isDaytime === false;
+  }
+
+  const iconKey = pickIcon(stripped);
+  if (iconKey === "clear" || iconKey === "sunny") {
+    return isNight ? "🌙" : "☀️";
+  }
+  return ICONS[iconKey];
 }
 
-export function WeatherIcon({ condition }: { condition: string }) {
-  const icon = getWeatherIcon(condition);
+export function WeatherIcon({ condition, isDaytime }: { condition: string; isDaytime?: boolean }) {
+  const icon = getWeatherIcon(condition, isDaytime);
   return <text>{icon}</text>;
 }
