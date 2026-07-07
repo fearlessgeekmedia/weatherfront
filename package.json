@@ -1,0 +1,26 @@
+{
+  "name": "weatherfront",
+  "version": "2.0.0",
+  "type": "module",
+  "bin": {
+    "weatherfront": "./src/main.tsx"
+  },
+  "scripts": {
+    "start": "bun src/main.tsx",
+    "dev": "bun --watch src/main.tsx"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.4.3",
+    "@opentui/react": "^0.4.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "terminal-image": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.17"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
