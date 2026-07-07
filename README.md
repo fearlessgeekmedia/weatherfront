@@ -26,6 +26,18 @@ Run the dashboard:
 bun start
 ```
 
+Auto-detect location via IP (default):
+
+```bash
+./weatherfront
+```
+
+Use specific coordinates:
+
+```bash
+./weatherfront 40.691 -112.001
+```
+
 Override the default auto-refresh interval (default: 5 minutes):
 
 ```bash

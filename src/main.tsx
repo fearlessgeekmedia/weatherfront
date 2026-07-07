@@ -10,6 +10,15 @@ function syncTerminalSize(renderer: { terminalWidth: number; terminalHeight: num
 }
 
 async function main() {
+  const args = process.argv.slice(2);
+  const initialLat = args[0] ? Number(args[0]) : undefined;
+  const initialLon = args[1] ? Number(args[1]) : undefined;
+  const initialLatLon =
+    typeof initialLat === "number" && isFinite(initialLat) &&
+    typeof initialLon === "number" && isFinite(initialLon)
+      ? { lat: initialLat, lon: initialLon }
+      : undefined;
+
   Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true, configurable: true });
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
@@ -18,7 +27,7 @@ async function main() {
   syncTerminalSize(renderer);
   (globalThis as Record<string, unknown>).__wfRenderer = renderer;
   process.on("SIGWINCH", () => syncTerminalSize(renderer));
-  createRoot(renderer).render(<App />);
+  createRoot(renderer).render(<App initialLatLon={initialLatLon} />);
 }
 
 main().catch((err) => {
