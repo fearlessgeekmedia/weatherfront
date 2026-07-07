@@ -12,7 +12,7 @@ import { CurrentConditions } from "./components/CurrentConditions";
 import { Forecast } from "./components/Forecast";
 import { Radar } from "./components/Radar";
 
-export function App() {
+export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const [data, setData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export function App() {
   }, [loadData, refreshMs]);
 
   useEffect(() => {
-    loadData();
+    loadData(initialLatLon);
     startAutoRefresh();
 
     return () => {
