@@ -1,0 +1,27 @@
+import { createCliRenderer } from "@opentui/core";
+import { createRoot } from "@opentui/react";
+import { App } from "./App";
+
+function syncTerminalSize(renderer: { terminalWidth: number; terminalHeight: number }) {
+  Object.defineProperty(process.stdout, "columns", { value: renderer.terminalWidth, writable: true, configurable: true });
+  Object.defineProperty(process.stdout, "rows", { value: renderer.terminalHeight, writable: true, configurable: true });
+  (globalThis as Record<string, unknown>).__wfCols = renderer.terminalWidth;
+  (globalThis as Record<string, unknown>).__wfRows = renderer.terminalHeight;
+}
+
+async function main() {
+  Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true, configurable: true });
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: true,
+    useKittyKeyboard: {},
+  });
+  syncTerminalSize(renderer);
+  (globalThis as Record<string, unknown>).__wfRenderer = renderer;
+  process.on("SIGWINCH", () => syncTerminalSize(renderer));
+  createRoot(renderer).render(<App />);
+}
+
+main().catch((err) => {
+  console.error("Failed to start WeatherFront:", err);
+  process.exit(1);
+});
