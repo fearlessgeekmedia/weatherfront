@@ -1,4 +1,5 @@
-.crush/
-.direnv/
-result
-result-*
+node_modules/
+.kilo/
+chat.md
+.DS_Store
+*.log

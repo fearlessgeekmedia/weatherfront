@@ -7,15 +7,28 @@ echo "🌤️  WeatherFront Installation Script"
 echo "=================================="
 echo ""
 
-# Check if Nix is installed
-if ! command -v nix &> /dev/null; then
-    echo "❌ Nix is not installed. Please install Nix first:"
-    echo "   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
-    echo "   # Or visit: https://nixos.org/download.html"
+# Check if Bun is installed
+if ! command -v bun &> /dev/null; then
+    echo "❌ Bun is not installed. Please install Bun first:"
+    echo "   curl -fsSL https://bun.sh/install | bash"
+    echo "   # Or visit: https://bun.sh"
     exit 1
 fi
 
-echo "✅ Nix is installed"
+echo "✅ Bun is installed"
+echo ""
+
+# Check if chafa is installed
+if ! command -v chafa &> /dev/null; then
+    echo "❌ Chafa is not installed. Please install Chafa first:"
+    echo "   # On Debian/Ubuntu: sudo apt install chafa"
+    echo "   # On Fedora: sudo dnf install chafa"
+    echo "   # On macOS: brew install chafa"
+    echo "   # Or visit: https://hpjansson.org/chafa/"
+    exit 1
+fi
+
+echo "✅ Chafa is installed"
 echo ""
 
 # Check if we're in a git repository
@@ -30,22 +43,25 @@ fi
 echo "✅ Running from WeatherFront repository"
 echo ""
 
-# Build the package
-echo "🔨 Building WeatherFront..."
-nix build
-
-if [ $? -eq 0 ]; then
-    echo "✅ Build successful"
-else
-    echo "❌ Build failed"
-    exit 1
-fi
+# Install dependencies
+echo "📦 Installing dependencies..."
+bun install
 
 echo ""
+echo "✅ Dependencies installed"
+echo ""
 
-# Test the built package
+# Build standalone binary
+echo "🔨 Building standalone binary..."
+bun build --compile --outfile weatherfront src/main.tsx
+
+echo ""
+echo "✅ Build successful"
+echo ""
+
+# Test the built binary
 echo "🧪 Testing WeatherFront..."
-if ./result/bin/weatherfront --help &> /dev/null || true; then
+if ./weatherfront --help &> /dev/null || true; then
     echo "✅ WeatherFront is working correctly"
 else
     echo "❌ WeatherFront test failed"
@@ -56,12 +72,10 @@ echo ""
 echo "🎉 WeatherFront is ready to use!"
 echo ""
 echo "Usage:"
-echo "  ./result/bin/weatherfront                    # Auto-detect location"
-echo "  ./result/bin/weatherfront 40.691 -112.001   # Use specific coordinates"
+echo "  ./weatherfront                    # Auto-detect location"
+echo "  ./weatherfront 40.691 -112.001   # Use specific coordinates"
 echo ""
-echo "To install permanently:"
-echo "  nix profile install ."
-echo ""
-echo "To run directly:"
-echo "  nix run ."
+echo "Or run with Bun:"
+echo "  bun start                          # Development mode with auto-reload"
+echo "  bun run weatherfront              # Production mode"
 echo ""
