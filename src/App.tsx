@@ -12,7 +12,7 @@ import { CurrentConditions } from "./components/CurrentConditions";
 import { Forecast } from "./components/Forecast";
 import { Radar } from "./components/Radar";
 
-export function App() {
+export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const [data, setData] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function App() {
       const coords = latLon ?? (await detectCoordinates());
       const point = await fetchNwsPoint(coords.lat, coords.lon);
       const forecast = await fetchNwsForecast(point.properties.forecast);
-      const current = await fetchCurrentConditions(point.properties.forecastGridData);
+      const current = await fetchCurrentConditions(point.properties.forecastGridData, coords.lat, coords.lon);
       const radar = getNearestRadar(coords.lat, coords.lon);
 
       setData({
@@ -58,7 +58,7 @@ export function App() {
   }, [loadData, refreshMs]);
 
   useEffect(() => {
-    loadData();
+    loadData(initialLatLon);
     startAutoRefresh();
 
     return () => {
@@ -111,7 +111,7 @@ export function App() {
           {loading && <text fg="gray">Loading current conditions...</text>}
           {error && <text fg="red">Error: {error}</text>}
           {data && (
-            <CurrentConditions conditions={data.current} city={data.location.city} state={data.location.state} />
+            <CurrentConditions conditions={data.current} city={data.location.city} state={data.location.state} isDaytime={data.current.isDaytime} />
           )}
         </box>
 

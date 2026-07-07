@@ -84,9 +84,10 @@ export interface CurrentConditions {
   windSpeedMph: number | null;
   windDirection: string | null;
   weather: string;
+  isDaytime?: boolean;
 }
 
-export async function fetchCurrentConditions(gridDataUrl: string): Promise<CurrentConditions> {
+export async function fetchCurrentConditions(gridDataUrl: string, lat: number, lon: number): Promise<CurrentConditions> {
   const response = await fetch(gridDataUrl, {
     headers: {
       "User-Agent": NWS_USER_AGENT,
@@ -117,7 +118,14 @@ export async function fetchCurrentConditions(gridDataUrl: string): Promise<Curre
   const humidityEntry = data.properties?.relativeHumidity?.values?.at(-1) as { value: number } | undefined;
   const humidity = humidityEntry?.value ?? null;
 
-  const weatherEntry = data.properties?.weather?.values?.at(-1) as { weather?: string } | undefined;
+  const weatherValues = data.properties?.weather?.values ?? [];
+  const utcHour = now.getUTCHours();
+  const localHour = ((utcHour + Math.round(lon / 15)) % 24 + 24) % 24;
+  const localHourStr = String(localHour).padStart(2, "0");
+  const weatherEntry =
+    weatherValues.find((v: { validTime: string }) => v.validTime.includes(`T${localHourStr}:`)) ??
+    weatherValues.find((v: { validTime: string }) => v.validTime.startsWith(timeStr)) ??
+    weatherValues.at(-1);
   const weather = weatherEntry?.weather ?? "Clear";
 
   return {
@@ -126,6 +134,7 @@ export async function fetchCurrentConditions(gridDataUrl: string): Promise<Curre
     windSpeedMph,
     windDirection: windDeg !== null ? degreesToCompass(windDeg) : null,
     weather,
+    isDaytime: localHour >= 6 && localHour < 20,
   };
 }
 

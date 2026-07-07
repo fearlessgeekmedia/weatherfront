@@ -5,10 +5,12 @@ export function CurrentConditions({
   conditions,
   city,
   state,
+  isDaytime,
 }: {
   conditions: CurrentConditions;
   city: string;
   state: string;
+  isDaytime?: boolean;
 }) {
   return (
     <box title={`Current: ${city}, ${state}`} style={{ flexDirection: "column", border: true, padding: 1, gap: 1 }}>
@@ -16,7 +18,7 @@ export function CurrentConditions({
         <text fg="cyan">
           {conditions.temperatureF !== null ? `${conditions.temperatureF}°F` : "N/A"}
         </text>
-        <WeatherIcon condition={conditions.weather} />
+        <WeatherIcon condition={conditions.weather} isDaytime={isDaytime} />
         <text>{conditions.weather}</text>
       </box>
       <box style={{ flexDirection: "column", gap: 0 }}>
