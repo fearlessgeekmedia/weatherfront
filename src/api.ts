@@ -2,13 +2,19 @@ import type { LatLon } from "./types";
 
 const NWS_USER_AGENT = "(weatherfront, fearlessgeek@github.com)";
 
-export async function detectCoordinates(): Promise<LatLon> {
-  const response = await fetch("https://ipinfo.io/json", {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new Error(`ipinfo.io failed: ${response.status}`);
+export async function fetchWithLog(url: string, label: string, headers: Record<string, string>) {
+  if (!url) {
+    throw new Error(`${label} has empty URL`);
   }
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(`${label} failed: ${response.status}`);
+  }
+  return response;
+}
+
+export async function detectCoordinates(): Promise<LatLon> {
+  const response = await fetchWithLog("https://ipinfo.io/json", "IPInfo", { Accept: "application/json" });
   const data = (await response.json()) as { loc?: string };
   if (!data.loc) {
     throw new Error("Could not detect location");
@@ -34,18 +40,11 @@ export interface NwsPoint {
 }
 
 export async function fetchNwsPoint(lat: number, lon: number): Promise<NwsPoint> {
-  const response = await fetch(
-    `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`,
-    {
-      headers: {
-        "User-Agent": NWS_USER_AGENT,
-        Accept: "application/json",
-      },
-    },
-  );
-  if (!response.ok) {
-    throw new Error(`NWS points failed: ${response.status}`);
-  }
+  const url = `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const response = await fetchWithLog(url, "NWS point", {
+    "User-Agent": NWS_USER_AGENT,
+    Accept: "application/json",
+  });
   return (await response.json()) as NwsPoint;
 }
 
@@ -65,18 +64,17 @@ export interface NwsForecast {
 }
 
 export async function fetchNwsForecast(url: string): Promise<ForecastPeriod[]> {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": NWS_USER_AGENT,
-      Accept: "application/geo+json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`NWS forecast failed: ${response.status}`);
+  if (!url || !url.trim()) {
+    throw new Error('Missing forecast URL');
   }
+  const response = await fetchWithLog(url, "NWS forecast", {
+    "User-Agent": NWS_USER_AGENT,
+    Accept: "application/geo+json",
+  });
   const data = (await response.json()) as NwsForecast;
   return data.properties.periods;
 }
+
 
 export interface CurrentConditions {
   temperatureF: number | null;
@@ -87,16 +85,22 @@ export interface CurrentConditions {
   isDaytime?: boolean;
 }
 
-export async function fetchCurrentConditions(gridDataUrl: string, lat: number, lon: number): Promise<CurrentConditions> {
-  const response = await fetch(gridDataUrl, {
-    headers: {
-      "User-Agent": NWS_USER_AGENT,
-      Accept: "application/json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`NWS grid data failed: ${response.status}`);
+export async function fetchCurrentConditions(gridDataUrl: string | undefined, lat: number, lon: number): Promise<CurrentConditions> {
+  if (!gridDataUrl || !gridDataUrl.trim()) {
+    return {
+      temperatureF: null,
+      humidity: null,
+      windSpeedMph: null,
+      windDirection: null,
+      weather: 'N/A',
+      isDaytime: true,
+    };
   }
+
+  const response = await fetchWithLog(gridDataUrl, "NWS grid data", {
+    "User-Agent": NWS_USER_AGENT,
+    Accept: "application/json",
+  });
   const data = await response.json();
   const now = new Date();
   const timeStr = now.toISOString().slice(0, 13);
@@ -150,7 +154,7 @@ export interface RadarInfo {
   url: string;
 }
 
-export function getNearestRadar(lat: number, lon: number): RadarInfo {
+export function getNearestRadar(lat: number, lon: number, cacheBuster?: string): RadarInfo {
   const radars: { id: string; lat: number; lon: number }[] = [
     { id: "KABR", lat: 45.456, lon: -98.413 },
     { id: "KABX", lat: 35.15, lon: -106.824 },
@@ -302,12 +306,13 @@ export function getNearestRadar(lat: number, lon: number): RadarInfo {
     }
   }
 
+  const baseUrl = `https://radar.weather.gov/ridge/standard/${nearest.id}_loop.gif`;
+  const finalUrl = cacheBuster ? `${baseUrl}?_=${cacheBuster}` : baseUrl;
   return {
     station: nearest.id,
-    url: `https://radar.weather.gov/ridge/standard/${nearest.id}_loop.gif`,
+    url: finalUrl,
   };
 }
-
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;

@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@opentui/core": "^0.4.3",
+    "@opentui/core-linux-x64": "0.4.3",
     "@opentui/react": "^0.4.3",
+    "jimp": "^1.6.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "terminal-image": "^4.3.0"

@@ -11,13 +11,30 @@ function syncTerminalSize(renderer: { terminalWidth: number; terminalHeight: num
 
 async function main() {
   const args = process.argv.slice(2);
-  const initialLat = args[0] ? Number(args[0]) : undefined;
-  const initialLon = args[1] ? Number(args[1]) : undefined;
+  
+  let initialLat: number | undefined;
+  let initialLon: number | undefined;
+  let refreshMs: number | undefined;
+
+  for (const arg of args) {
+    if (arg.startsWith("--lat=")) {
+      initialLat = Number(arg.slice(6));
+    } else if (arg.startsWith("--long=")) {
+      initialLon = Number(arg.slice(7));
+    } else if (arg.startsWith("--refresh=")) {
+      refreshMs = Number(arg.slice(10));
+    }
+  }
+
   const initialLatLon =
     typeof initialLat === "number" && isFinite(initialLat) &&
     typeof initialLon === "number" && isFinite(initialLon)
       ? { lat: initialLat, lon: initialLon }
       : undefined;
+
+  if (typeof refreshMs === "number" && isFinite(refreshMs)) {
+    process.env.WEATHERFRONT_REFRESH_INTERVAL = String(refreshMs);
+  }
 
   Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true, configurable: true });
   const renderer = await createCliRenderer({

@@ -35,13 +35,13 @@ Auto-detect location via IP (default):
 Use specific coordinates:
 
 ```bash
-./weatherfront 40.691 -112.001
+./weatherfront --lat=40.691 --long=-112.001
 ```
 
-Override the default auto-refresh interval (default: 5 minutes):
+Override the default auto-refresh interval in seconds (default: 300 = 5 minutes):
 
 ```bash
-WEATHERFRONT_REFRESH_INTERVAL=60000 bun start
+./weatherfront --refresh=60
 ```
 
 Keyboard shortcuts:
@@ -71,6 +71,5 @@ bun dev
 - Radar uses the Kitty graphics protocol when running in a Kitty terminal.
 - Otherwise it falls back to terminal symbols via Chafa if available.
 - Multiplexers like tmux/screen may block image protocols; run outside them for native radar rendering.
-- Override the refresh interval with `WEATHERFRONT_REFRESH_INTERVAL` in milliseconds (e.g., `60000` for 1 minute, `300000` for 5 minutes).
 
 If you find this project helpful, consider supporting its development at https://ko-fi.com/fearlessgeekmedia.

@@ -18,17 +18,41 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const refreshMs = Number(process.env.WEATHERFRONT_REFRESH_INTERVAL || 300000);
+  const latLonRef = useRef<LatLon | undefined>(initialLatLon);
+  useEffect(() => {
+    latLonRef.current = initialLatLon;
+  }, [initialLatLon]);
+
+  const refreshMs = Number(process.env.WEATHERFRONT_REFRESH_INTERVAL || 300) * 1000;
 
   const loadData = useCallback(async (latLon?: LatLon) => {
     setLoading(true);
     setError(null);
     try {
-      const coords = latLon ?? (await detectCoordinates());
+      const coords = latLon ?? latLonRef.current ?? (await detectCoordinates());
       const point = await fetchNwsPoint(coords.lat, coords.lon);
-      const forecast = await fetchNwsForecast(point.properties.forecast);
-      const current = await fetchCurrentConditions(point.properties.forecastGridData, coords.lat, coords.lon);
-      const radar = getNearestRadar(coords.lat, coords.lon);
+      
+      let forecast: any[] = [];
+      if (point.properties.forecast && point.properties.forecast.trim()) {
+        const forecastUrl = point.properties.forecast;
+        forecast = await fetchNwsForecast(forecastUrl);
+      }
+
+      let current: any = {
+        temperatureF: null,
+        humidity: null,
+        windSpeedMph: null,
+        windDirection: null,
+        weather: "N/A",
+        isDaytime: true,
+      };
+      const gridDataUrl = point.properties.forecastGridData;
+      if (gridDataUrl && gridDataUrl.trim()) {
+        current = await fetchCurrentConditions(gridDataUrl, coords.lat, coords.lon);
+      }
+      
+      const radarInfo = getNearestRadar(coords.lat, coords.lon, Date.now().toString());
+      const radar = radarInfo;
 
       setData({
         location: {
@@ -53,11 +77,12 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
       clearInterval(intervalRef.current);
     }
     intervalRef.current = setInterval(() => {
-      loadData();
+      loadData(latLonRef.current);
     }, refreshMs);
   }, [loadData, refreshMs]);
 
   useEffect(() => {
+    latLonRef.current = initialLatLon;
     loadData(initialLatLon);
     startAutoRefresh();
 
@@ -71,7 +96,7 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
 
   useKeyboard((key) => {
     if (key.name === "r" && !key.ctrl && !key.meta) {
-      loadData();
+      loadData(latLonRef.current);
       startAutoRefresh();
     }
     if (key.name === "q" && !key.ctrl && !key.meta) {
@@ -120,7 +145,7 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
         </box>
       </box>
 
-      {data && <Radar radarUrl={data.radar.url} />}
+      {data && data.radar?.url?.trim() && <Radar radarUrl={data.radar.url} />}
     </box>
   );
 }
