@@ -1,4 +1,5 @@
 import type { ForecastPeriod } from "../api";
+import { getWeatherIcon } from "./WeatherIcon";
 
 export function Forecast({ periods }: { periods: ForecastPeriod[] }) {
   return (
@@ -14,7 +15,7 @@ export function Forecast({ periods }: { periods: ForecastPeriod[] }) {
           >
             <text fg="cyan">{period.name}</text>
             <text fg="gray">
-              {period.isDaytime !== false ? "☀️" : "🌙"} {period.temperature}
+              {getWeatherIcon(period.shortForecast, period.isDaytime)} {period.temperature}
               {period.temperatureUnit}
             </text>
             <text>{period.shortForecast}</text>

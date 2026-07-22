@@ -6,11 +6,13 @@ import {
   fetchNwsPoint,
   fetchNwsForecast,
   fetchCurrentConditions,
+  fetchNwsAlerts,
   getNearestRadar,
 } from "./api";
 import { CurrentConditions } from "./components/CurrentConditions";
 import { Forecast } from "./components/Forecast";
 import { Radar } from "./components/Radar";
+import { Alerts } from "./components/Alerts";
 
 export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const [data, setData] = useState<WeatherData | null>(null);
@@ -54,6 +56,13 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
       const radarInfo = getNearestRadar(coords.lat, coords.lon, Date.now().toString());
       const radar = radarInfo;
 
+      let alerts: any[] = [];
+      try {
+        alerts = await fetchNwsAlerts(coords.lat, coords.lon);
+      } catch {
+        alerts = [];
+      }
+
       setData({
         location: {
           city: point.properties.relativeLocation.properties.city,
@@ -64,6 +73,7 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
         current,
         forecast,
         radar,
+        alerts,
       });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -94,6 +104,11 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
     };
   }, [loadData, startAutoRefresh]);
 
+  const [selectedAlertIdx, setSelectedAlertIdx] = useState(0);
+  const [expandedAlertId, setExpandedAlertId] = useState<string | null>(null);
+  const alertIdxRef = useRef(0);
+  alertIdxRef.current = selectedAlertIdx;
+
   useKeyboard((key) => {
     if (key.name === "r" && !key.ctrl && !key.meta) {
       loadData(latLonRef.current);
@@ -109,6 +124,18 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
         // ignore
       }
       process.exit(0);
+    }
+    if (key.name === "j" || key.name === "ArrowDown") {
+      setSelectedAlertIdx((i) => Math.min(i + 1, (data?.alerts.length ?? 1) - 1));
+    } else if (key.name === "k" || key.name === "ArrowUp") {
+      setSelectedAlertIdx((i) => Math.max(i - 1, 0));
+    } else if (key.name === "return" || key.name === "space") {
+      if (data) {
+        const current = data.alerts[alertIdxRef.current];
+        if (current) {
+          setExpandedAlertId((prev) => (prev === current.id ? null : current.id));
+        }
+      }
     }
   });
 
@@ -131,21 +158,21 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
         </text>
       </box>
 
-      <box style={{ flexDirection: "row", gap: 1, width: "100%" }}>
+      <box style={{ flexDirection: "row", gap: 1, width: "100%", flexGrow: 1 }}>
         <box style={{ flexDirection: "column", gap: 1, width: 35, flexShrink: 0 }}>
           {loading && <text fg="gray">Loading current conditions...</text>}
           {error && <text fg="red">Error: {error}</text>}
           {data && (
             <CurrentConditions conditions={data.current} city={data.location.city} state={data.location.state} isDaytime={data.current.isDaytime} />
           )}
+          {data && data.alerts.length > 0 && <Alerts alerts={data.alerts} selectedIdx={selectedAlertIdx} expandedId={expandedAlertId} onExpand={(id) => setExpandedAlertId((prev) => (prev === id ? null : id))} />}
         </box>
 
         <box style={{ flexDirection: "column", gap: 1, flexGrow: 1, flexShrink: 1, minWidth: 1 }}>
           <Forecast periods={data?.forecast ?? []} />
+          {data && data.radar?.url?.trim() && <Radar radarUrl={data.radar.url} />}
         </box>
       </box>
-
-      {data && data.radar?.url?.trim() && <Radar radarUrl={data.radar.url} />}
     </box>
   );
 }

@@ -13,4 +13,5 @@ export interface WeatherData {
   current: import("./api").CurrentConditions;
   forecast: import("./api").ForecastPeriod[];
   radar: import("./api").RadarInfo;
+  alerts: import("./api").Alert[];
 }

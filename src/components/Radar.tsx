@@ -135,7 +135,6 @@ export function Radar({ radarUrl }: { radarUrl?: string }) {
 
   const [status, setStatus] = useState<string>("Loading radar...");
   const [error, setError] = useState<string | null>(null);
-  const [, setTick] = useState<number>(0);
   const currentRef = useRef<string>("");
   const lastRef = useRef<string>("");
   const posRef = useRef<{ row: number; col: number } | null>(null);
@@ -155,7 +154,6 @@ export function Radar({ radarUrl }: { radarUrl?: string }) {
           (b64) => {
             if (cancelled) return;
             currentRef.current = b64;
-            setTick(t => t + 1);
           },
           () => {
             if (!cancelled) setStatus("done");

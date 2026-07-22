@@ -8,7 +8,8 @@ export async function fetchWithLog(url: string, label: string, headers: Record<s
   }
   const response = await fetch(url, { headers });
   if (!response.ok) {
-    throw new Error(`${label} failed: ${response.status}`);
+    const statusText = (response as { statusText?: string }).statusText?.trim();
+    throw new Error(`${label} failed: ${response.status}${statusText ? ` (${statusText})` : ""}`);
   }
   return response;
 }
@@ -152,6 +153,43 @@ function degreesToCompass(deg: number): string {
 export interface RadarInfo {
   station: string;
   url: string;
+}
+
+export interface AlertProperties {
+  id: string;
+  event: string;
+  headline: string | null;
+  description: string;
+  instruction: string | null;
+  severity: string;
+  urgency: string;
+  certainty: string;
+  response: string;
+  areaDesc: string;
+  senderName: string;
+  effective: string;
+  expires: string;
+  status: string;
+  messageType: string;
+}
+
+export interface Alert {
+  id: string;
+  properties: AlertProperties;
+}
+
+export interface NwsAlertsResponse {
+  features: Alert[];
+}
+
+export async function fetchNwsAlerts(lat: number, lon: number): Promise<Alert[]> {
+  const url = `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`;
+  const response = await fetchWithLog(url, "NWS alerts", {
+    "User-Agent": NWS_USER_AGENT,
+    Accept: "application/geo+json",
+  });
+  const data = await response.json();
+  return data.features ?? [];
 }
 
 export function getNearestRadar(lat: number, lon: number, cacheBuster?: string): RadarInfo {
