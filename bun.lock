@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "weatherfront",
+      "name": "isoboard",
       "dependencies": {
         "@opentui/core": "^0.4.3",
         "@opentui/core-linux-x64": "0.4.3",

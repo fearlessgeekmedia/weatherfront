@@ -14,4 +14,6 @@ export interface WeatherData {
   forecast: import("./api").ForecastPeriod[];
   radar: import("./api").RadarInfo;
   alerts: import("./api").Alert[];
+  forecastHourlyUrl?: string;
+  hourlyPeriods?: import("./api").NwsHourlyPeriod[];
 }

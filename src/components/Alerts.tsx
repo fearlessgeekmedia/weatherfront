@@ -63,6 +63,7 @@ export function Alerts({
 
   return (
     <box title="Alerts" style={{ flexDirection: "column", gap: 1, border: true, padding: 1, flexGrow: 1, flexShrink: 1, minWidth: 1 }}>
+      <text fg="gray">Press Enter or Space to expand/collapse alerts. Use j/k or Up/Down arrows to navigate.</text>
       {alerts.map((alert, idx) => {
         const props = alert.properties;
         const colors = alertTypeColors(props.event);

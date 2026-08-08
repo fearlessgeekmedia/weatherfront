@@ -1,18 +1,18 @@
 # Nix Setup Documentation
 
-This document explains the Nix flake configuration for WeatherFront and how to maintain it.
+This document explains the Nix flake configuration for IsoBoard and how to maintain it.
 
 ## Flake Structure
 
 The `flake.nix` file provides:
 
-1. **Package**: A derivation that builds WeatherFront with all dependencies
+1. **Package**: A derivation that builds IsoBoard with all dependencies
 2. **App**: Direct execution via `nix run`
 3. **Development Shell**: Environment with all dependencies for development
 
 ## Dependencies
 
-WeatherFront requires these runtime dependencies, all managed by Nix:
+IsoBoard requires these runtime dependencies, all managed by Nix:
 
 - `bash` - Shell interpreter
 - `curl` - HTTP client for API requests
@@ -31,7 +31,7 @@ nix flake check
 nix build
 
 # Test the built binary
-./result/bin/weatherfront
+./result/bin/isoboard
 
 # Run directly without building
 nix run .
@@ -73,7 +73,7 @@ When publishing to a Git repository, ensure:
 
 1. `flake.nix` and `flake.lock` are committed
 2. Update README.md GitHub URLs to match your repository
-3. The script remains executable (`chmod +x weatherfront`)
+3. The script remains executable (`chmod +x isoboard`)
 
 ## Direnv Integration
 
@@ -101,5 +101,5 @@ Always test after modifying the flake:
 ```bash
 nix flake check
 nix build
-./result/bin/weatherfront
+./result/bin/isoboard
 ```

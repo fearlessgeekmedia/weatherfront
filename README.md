@@ -1,8 +1,10 @@
-# WeatherFront
+# Isoboard
 
-WeatherFront is a terminal-based weather dashboard that displays current conditions, detailed forecasts, and animated radar imagery, powered by the National Weather Service (NWS) API. Built with Bun and OpenTUI.
+The project WeatherFront has been renamed to IsoBoard, due to discovering another software project by the same name.
 
-![WeatherFront Screenshot](screenshot.png)
+Isoboard is a terminal-based weather dashboard that displays current conditions, detailed forecasts, and animated radar imagery, powered by the National Weather Service (NWS) API. Built with Bun and OpenTUI.
+
+![Isoboard Screenshot](screenshot.png)
 
 ## Prerequisites
 
@@ -11,37 +13,52 @@ WeatherFront is a terminal-based weather dashboard that displays current conditi
 
 ## Quick Start
 
-```bash
-git clone https://github.com/fearlessgeek/weatherfront.git
-cd weatherfront
+```
+git clone https://github.com/fearlessgeek/isoboard.git
+cd isoboard
 bun install
 bun start
+```
+
+## Installation
+
+### Standalone Binary
+
+```
+bun build --compile --outfile isoboard src/main.tsx
+./isoboard
+```
+
+### Development
+
+```
+bun dev
 ```
 
 ## Usage
 
 Run the dashboard:
 
-```bash
+```
 bun start
 ```
 
 Auto-detect location via IP (default):
 
-```bash
-./weatherfront
+```
+./isoboard
 ```
 
 Use specific coordinates:
 
-```bash
-./weatherfront --lat=40.691 --long=-112.001
+```
+./isoboard --lat=40.691 --long=-112.001
 ```
 
 Override the default auto-refresh interval in seconds (default: 300 = 5 minutes):
 
-```bash
-./weatherfront --refresh=60
+```
+./isoboard --refresh=60
 ```
 
 Keyboard shortcuts:
@@ -50,21 +67,6 @@ Keyboard shortcuts:
 - `q` — quit
 
 The refresh interval is shown in the top status bar.
-
-## Installation
-
-### Standalone Binary
-
-```bash
-bun build --compile --outfile weatherfront src/main.tsx
-./weatherfront
-```
-
-### Development
-
-```bash
-bun dev
-```
 
 ## Image output and radar
 

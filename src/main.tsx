@@ -33,7 +33,7 @@ async function main() {
       : undefined;
 
   if (typeof refreshMs === "number" && isFinite(refreshMs)) {
-    process.env.WEATHERFRONT_REFRESH_INTERVAL = String(refreshMs);
+    process.env.ISOBOARD_REFRESH_INTERVAL = String(refreshMs);
   }
 
   Object.defineProperty(process.stdout, "isTTY", { value: true, writable: true, configurable: true });
@@ -48,6 +48,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Failed to start WeatherFront:", err);
+  console.error("Failed to start IsoBoard:", err);
   process.exit(1);
 });

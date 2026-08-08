@@ -32,6 +32,11 @@ export function CurrentConditions({
             Wind: <span>{conditions.windSpeedMph} mph {conditions.windDirection ?? ""}</span>
           </text>
         )}
+        {conditions.precipChance !== null && (
+          <text fg="gray">
+            Precipitation Chance: <span>{conditions.precipChance}% chance of precipitation</span>
+          </text>
+        )}
       </box>
     </box>
   );

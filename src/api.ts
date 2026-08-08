@@ -1,6 +1,6 @@
 import type { LatLon } from "./types";
 
-const NWS_USER_AGENT = "(weatherfront, fearlessgeek@github.com)";
+const NWS_USER_AGENT = "(isoboard, fearlessgeek@github.com)";
 
 export async function fetchWithLog(url: string, label: string, headers: Record<string, string>) {
   if (!url) {
@@ -35,6 +35,7 @@ export interface NwsPoint {
       };
     };
     forecast: string;
+    forecastHourly?: string;
     forecastGridData: string;
     radarStation?: string;
   };
@@ -56,6 +57,9 @@ export interface ForecastPeriod {
   shortForecast: string;
   detailedForecast: string;
   isDaytime?: boolean;
+  startTime?: string;
+  endTime?: string;
+  probabilityOfPrecipitation?: number | null;
 }
 
 export interface NwsForecast {
@@ -73,7 +77,54 @@ export async function fetchNwsForecast(url: string): Promise<ForecastPeriod[]> {
     Accept: "application/geo+json",
   });
   const data = (await response.json()) as NwsForecast;
-  return data.properties.periods;
+  return data.properties.periods.map((p) => ({
+    ...p,
+    probabilityOfPrecipitation: typeof p.probabilityOfPrecipitation === "object" && p.probabilityOfPrecipitation !== null
+      ? (p.probabilityOfPrecipitation as { value?: number }).value ?? null
+      : (p.probabilityOfPrecipitation ?? null),
+  }));
+}
+
+
+export type NwsHourlyPeriod = ForecastPeriod & {
+  windSpeed: string;
+  windDirection: string;
+  icon?: string;
+};
+
+export interface NwsHourlyForecast {
+  properties: {
+    periods: (ForecastPeriod & {
+      windSpeed: string;
+      windDirection: string;
+      icon?: string;
+    })[];
+  };
+}
+
+export async function fetchNwsHourlyForecast(url: string): Promise<(ForecastPeriod & { windSpeed: string; windDirection: string; icon?: string })[]> {
+  if (!url || !url.trim()) {
+    throw new Error('Missing hourly forecast URL');
+  }
+  const response = await fetchWithLog(url, "NWS hourly forecast", {
+    "User-Agent": NWS_USER_AGENT,
+    Accept: "application/geo+json",
+  });
+  const data = (await response.json()) as NwsHourlyForecast;
+  return data.properties.periods.map((p) => ({
+    name: p.name,
+    temperature: p.temperature,
+    temperatureUnit: p.temperatureUnit,
+    shortForecast: p.shortForecast,
+    detailedForecast: p.detailedForecast,
+    isDaytime: p.isDaytime,
+    startTime: p.startTime,
+    endTime: p.endTime,
+    probabilityOfPrecipitation: p.probabilityOfPrecipitation?.value ?? null,
+    windSpeed: p.windSpeed,
+    windDirection: p.windDirection,
+    icon: p.icon,
+  }));
 }
 
 
@@ -84,6 +135,7 @@ export interface CurrentConditions {
   windDirection: string | null;
   weather: string;
   isDaytime?: boolean;
+  precipChance: number | null;
 }
 
 export async function fetchCurrentConditions(gridDataUrl: string | undefined, lat: number, lon: number): Promise<CurrentConditions> {
@@ -95,6 +147,7 @@ export async function fetchCurrentConditions(gridDataUrl: string | undefined, la
       windDirection: null,
       weather: 'N/A',
       isDaytime: true,
+      precipChance: null,
     };
   }
 
@@ -133,6 +186,9 @@ export async function fetchCurrentConditions(gridDataUrl: string | undefined, la
     weatherValues.at(-1);
   const weather = weatherEntry?.weather ?? "Clear";
 
+  const precipEntry = data.properties?.probabilityOfPrecipitation?.values?.at(-1) as { value: number } | undefined;
+  const precipChance = precipEntry?.value ?? null;
+
   return {
     temperatureF: tempF,
     humidity,
@@ -140,6 +196,7 @@ export async function fetchCurrentConditions(gridDataUrl: string | undefined, la
     windDirection: windDeg !== null ? degreesToCompass(windDeg) : null,
     weather,
     isDaytime: localHour >= 6 && localHour < 20,
+    precipChance,
   };
 }
 
