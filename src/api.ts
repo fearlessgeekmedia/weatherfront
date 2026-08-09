@@ -120,7 +120,9 @@ export async function fetchNwsHourlyForecast(url: string): Promise<(ForecastPeri
     isDaytime: p.isDaytime,
     startTime: p.startTime,
     endTime: p.endTime,
-    probabilityOfPrecipitation: p.probabilityOfPrecipitation?.value ?? null,
+    probabilityOfPrecipitation: typeof p.probabilityOfPrecipitation === "object" && p.probabilityOfPrecipitation !== null && !Array.isArray(p.probabilityOfPrecipitation)
+      ? (p.probabilityOfPrecipitation as { value?: number }).value ?? null
+      : (p.probabilityOfPrecipitation ?? null),
     windSpeed: p.windSpeed,
     windDirection: p.windDirection,
     icon: p.icon,

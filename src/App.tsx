@@ -13,6 +13,7 @@ import {
 } from "./api";
 import { CurrentConditions } from "./components/CurrentConditions";
 import { Forecast } from "./components/Forecast";
+import type { ForecastHandle } from "./components/Forecast";
 import { Radar } from "./components/Radar";
 import { Alerts } from "./components/Alerts";
 
@@ -130,6 +131,7 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const [showHourly, setShowHourly] = useState(false);
   const [hourlyPeriods, setHourlyPeriods] = useState<NwsHourlyPeriod[] | null>(null);
   const [forecastHourlyUrl, setForecastHourlyUrl] = useState<string | undefined>(undefined);
+  const forecastScrollRef = useRef<ForecastHandle | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,6 +155,12 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   useEffect(() => {
     setForecastHourlyUrl(data?.forecastHourlyUrl);
   }, [data?.forecastHourlyUrl]);
+
+  useEffect(() => {
+    if (!showHourly) {
+      forecastScrollRef.current?.scrollToTop();
+    }
+  }, [showHourly]);
 
   useKeyboard((key) => {
     if (key.name === "r" && !key.ctrl && !key.meta) {
@@ -179,15 +187,22 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
         setSelectedAlertIdx((i) => Math.min(i + 1, (data?.alerts.length ?? 1) - 1));
       } else if (!showHourly) {
         setSelectedForecastIdx((i) => {
-          const max = data ? Math.max(0, getUniqueDays(data.forecast).length - 1) : 0;
-          return Math.min(i + 1, max);
+          const next = Math.min(i + 1, data ? Math.max(0, getUniqueDays(data.forecast).length - 1) : 0);
+          const targetLine = next * 2;
+          forecastScrollRef.current?.scrollToLine(targetLine);
+          return next;
         });
       }
     } else if (key.name === "k" || key.name === "ArrowUp") {
       if (focusedPanel === "alerts") {
         setSelectedAlertIdx((i) => Math.max(i - 1, 0));
       } else if (!showHourly) {
-        setSelectedForecastIdx((i) => Math.max(i - 1, 0));
+        setSelectedForecastIdx((i) => {
+          const next = Math.max(i - 1, 0);
+          const targetLine = next * 2;
+          forecastScrollRef.current?.scrollToLine(targetLine);
+          return next;
+        });
       }
     } else if (key.name === "return" || key.name === "space") {
       if (focusedPanel === "alerts") {
@@ -240,6 +255,8 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
               showHourly={showHourly}
               hourlyPeriods={hourlyPeriods}
               uniqueDays={data ? getUniqueDays(data.forecast) : []}
+              onScrollboxReady={(handle) => { forecastScrollRef.current = handle; }}
+              focusedPanel={focusedPanel}
             />
             {data && data.radar?.url?.trim() && <Radar radarUrl={data.radar.url} />}
           </box>
