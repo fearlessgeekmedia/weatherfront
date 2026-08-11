@@ -1,9 +1,9 @@
 #!/bin/bash
-# WeatherFront Installation Script
+# IsoBoard Installation Script
 
 set -euo pipefail
 
-echo "🌤️  WeatherFront Installation Script"
+echo "🌤️  IsoBoard Installation Script"
 echo "=================================="
 echo ""
 
@@ -33,14 +33,14 @@ echo ""
 
 # Check if we're in a git repository
 if [ ! -d ".git" ]; then
-    echo "❌ This script must be run from the WeatherFront repository root"
+    echo "❌ This script must be run from the IsoBoard repository root"
     echo "   Please clone the repository first:"
-    echo "   git clone https://github.com/fearlessgeek/weatherfront.git"
-    echo "   cd weatherfront"
+    echo "   git clone https://github.com/fearlessgeek/isoboard.git"
+    echo "   cd isoboard"
     exit 1
 fi
 
-echo "✅ Running from WeatherFront repository"
+echo "✅ Running from IsoBoard repository"
 echo ""
 
 # Install dependencies
@@ -53,29 +53,29 @@ echo ""
 
 # Build standalone binary
 echo "🔨 Building standalone binary..."
-bun build --compile --outfile weatherfront src/main.tsx
+bun build --compile --outfile isoboard src/main.tsx
 
 echo ""
 echo "✅ Build successful"
 echo ""
 
 # Test the built binary
-echo "🧪 Testing WeatherFront..."
-if ./weatherfront --help &> /dev/null || true; then
-    echo "✅ WeatherFront is working correctly"
+echo "🧪 Testing IsoBoard..."
+if ./isoboard --help &> /dev/null || true; then
+    echo "✅ IsoBoard is working correctly"
 else
-    echo "❌ WeatherFront test failed"
+    echo "❌ IsoBoard test failed"
     exit 1
 fi
 
 echo ""
-echo "🎉 WeatherFront is ready to use!"
+echo "🎉 IsoBoard is ready to use!"
 echo ""
 echo "Usage:"
-echo "  ./weatherfront                    # Auto-detect location"
-echo "  ./weatherfront 40.691 -112.001   # Use specific coordinates"
+echo "  ./isoboard                    # Auto-detect location"
+echo "  ./isoboard 40.691 -112.001   # Use specific coordinates"
 echo ""
 echo "Or run with Bun:"
 echo "  bun start                          # Development mode with auto-reload"
-echo "  bun run weatherfront              # Production mode"
+echo "  bun run isoboard              # Production mode"
 echo ""

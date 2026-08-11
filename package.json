@@ -1,9 +1,10 @@
 {
   "name": "isoboard",
+  "version": "2.0.3",
   "version": "2.0.2-r2",
   "type": "module",
   "bin": {
-    "weatherfront": "./src/main.tsx"
+    "isoboard": "./src/main.tsx"
   },
   "scripts": {
     "start": "bun src/main.tsx",

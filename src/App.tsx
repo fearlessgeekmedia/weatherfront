@@ -1,18 +1,34 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useKeyboard } from "@opentui/react";
 import type { LatLon, WeatherData } from "./types";
+import type { NwsHourlyPeriod, ForecastPeriod } from "./api";
 import {
   detectCoordinates,
   fetchNwsPoint,
   fetchNwsForecast,
   fetchCurrentConditions,
   fetchNwsAlerts,
+  fetchNwsHourlyForecast,
   getNearestRadar,
 } from "./api";
 import { CurrentConditions } from "./components/CurrentConditions";
 import { Forecast } from "./components/Forecast";
+import type { ForecastHandle } from "./components/Forecast";
 import { Radar } from "./components/Radar";
 import { Alerts } from "./components/Alerts";
+
+function getUniqueDays(periods: ForecastPeriod[]): string[] {
+  const days: string[] = [];
+  const seen = new Set<string>();
+  for (const period of periods) {
+    const day = period.name.replace(/ (Night|Day)$/, "").trim();
+    if (!seen.has(day)) {
+      seen.add(day);
+      days.push(day);
+    }
+  }
+  return days;
+}
 
 export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const [data, setData] = useState<WeatherData | null>(null);
@@ -25,7 +41,7 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
     latLonRef.current = initialLatLon;
   }, [initialLatLon]);
 
-  const refreshMs = Number(process.env.WEATHERFRONT_REFRESH_INTERVAL || 300) * 1000;
+  const refreshMs = Number(process.env.ISOBOARD_REFRESH_INTERVAL || 300) * 1000;
 
   const loadData = useCallback(async (latLon?: LatLon) => {
     setLoading(true);
@@ -74,6 +90,7 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
         forecast,
         radar,
         alerts,
+        forecastHourlyUrl: point.properties.forecastHourly || undefined,
       });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -109,6 +126,42 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   const alertIdxRef = useRef(0);
   alertIdxRef.current = selectedAlertIdx;
 
+  const [focusedPanel, setFocusedPanel] = useState<"alerts" | "forecast">("forecast");
+  const [selectedForecastIdx, setSelectedForecastIdx] = useState(0);
+  const [showHourly, setShowHourly] = useState(false);
+  const [hourlyPeriods, setHourlyPeriods] = useState<NwsHourlyPeriod[] | null>(null);
+  const [forecastHourlyUrl, setForecastHourlyUrl] = useState<string | undefined>(undefined);
+  const forecastScrollRef = useRef<ForecastHandle | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadHourly() {
+      if (!forecastHourlyUrl || selectedForecastIdx < 0 || !showHourly) {
+        setHourlyPeriods(null);
+        return;
+      }
+      try {
+        const periods = await fetchNwsHourlyForecast(forecastHourlyUrl);
+        if (cancelled) return;
+        setHourlyPeriods(periods);
+      } catch {
+        if (!cancelled) setHourlyPeriods(null);
+      }
+    }
+    loadHourly();
+    return () => { cancelled = true; };
+  }, [forecastHourlyUrl, selectedForecastIdx, showHourly]);
+
+  useEffect(() => {
+    setForecastHourlyUrl(data?.forecastHourlyUrl);
+  }, [data?.forecastHourlyUrl]);
+
+  useEffect(() => {
+    if (!showHourly) {
+      forecastScrollRef.current?.scrollToTop();
+    }
+  }, [showHourly]);
+
   useKeyboard((key) => {
     if (key.name === "r" && !key.ctrl && !key.meta) {
       loadData(latLonRef.current);
@@ -125,16 +178,42 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
       }
       process.exit(0);
     }
-    if (key.name === "j" || key.name === "ArrowDown") {
-      setSelectedAlertIdx((i) => Math.min(i + 1, (data?.alerts.length ?? 1) - 1));
+    if (key.name === "h" || key.name === "ArrowLeft") {
+      setFocusedPanel("alerts");
+    } else if (key.name === "l" || key.name === "ArrowRight") {
+      setFocusedPanel("forecast");
+    } else     if (key.name === "j" || key.name === "ArrowDown") {
+      if (focusedPanel === "alerts") {
+        setSelectedAlertIdx((i) => Math.min(i + 1, (data?.alerts.length ?? 1) - 1));
+      } else if (!showHourly) {
+        setSelectedForecastIdx((i) => {
+          const next = Math.min(i + 1, data ? Math.max(0, getUniqueDays(data.forecast).length - 1) : 0);
+          const targetLine = next * 2;
+          forecastScrollRef.current?.scrollToLine(targetLine);
+          return next;
+        });
+      }
     } else if (key.name === "k" || key.name === "ArrowUp") {
-      setSelectedAlertIdx((i) => Math.max(i - 1, 0));
+      if (focusedPanel === "alerts") {
+        setSelectedAlertIdx((i) => Math.max(i - 1, 0));
+      } else if (!showHourly) {
+        setSelectedForecastIdx((i) => {
+          const next = Math.max(i - 1, 0);
+          const targetLine = next * 2;
+          forecastScrollRef.current?.scrollToLine(targetLine);
+          return next;
+        });
+      }
     } else if (key.name === "return" || key.name === "space") {
-      if (data) {
-        const current = data.alerts[alertIdxRef.current];
-        if (current) {
-          setExpandedAlertId((prev) => (prev === current.id ? null : current.id));
+      if (focusedPanel === "alerts") {
+        if (data) {
+          const current = data.alerts[alertIdxRef.current];
+          if (current) {
+            setExpandedAlertId((prev) => (prev === current.id ? null : current.id));
+          }
         }
+      } else {
+        setShowHourly((prev) => !prev);
       }
     }
   });
@@ -147,32 +226,41 @@ export function App({ initialLatLon }: { initialLatLon?: LatLon }) {
   return (
     <box style={{ flexDirection: "column", padding: 1, gap: 1, width: "100%", height: "100%" }}>
       <box style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <text fg="yellow">WeatherFront</text>
+        <text fg="yellow">IsoBoard</text>
         {data && (
           <text fg="gray">
             {data.location.city}, {data.location.state} ({data.location.lat.toFixed(2)}, {data.location.lon.toFixed(2)})
           </text>
         )}
         <text fg="gray">
-          Press <span fg="white">r</span> to refresh | <span fg="white">q</span> to quit | Auto refresh: {refreshLabel}
+          Press <span fg="white">r</span> refresh | <span fg="white">q</span> quit | <span fg="white">h/l</span> or <span fg="white">arrows</span> switch panels | Panel: <span fg="white">{focusedPanel === "alerts" ? "Alerts" : "Forecast"}</span> | In Forecast: <span fg="white">j/k</span> or arrows scroll days, <span fg="white">Enter</span> open hourly | Auto: {refreshLabel}
         </text>
       </box>
 
-      <box style={{ flexDirection: "row", gap: 1, width: "100%", flexGrow: 1 }}>
-        <box style={{ flexDirection: "column", gap: 1, width: 35, flexShrink: 0 }}>
-          {loading && <text fg="gray">Loading current conditions...</text>}
-          {error && <text fg="red">Error: {error}</text>}
-          {data && (
-            <CurrentConditions conditions={data.current} city={data.location.city} state={data.location.state} isDaytime={data.current.isDaytime} />
-          )}
-          {data && data.alerts.length > 0 && <Alerts alerts={data.alerts} selectedIdx={selectedAlertIdx} expandedId={expandedAlertId} onExpand={(id) => setExpandedAlertId((prev) => (prev === id ? null : id))} />}
-        </box>
+        <box style={{ flexDirection: "row", gap: 1, width: "100%", flexGrow: 1 }}>
+          <box style={{ flexDirection: "column", gap: 1, width: 35, flexShrink: 0, ...(focusedPanel === "alerts" ? { border: true } : {}) }}>
+            {loading && <text fg="gray">Loading current conditions...</text>}
+            {error && <text fg="red">Error: {error}</text>}
+            {data && (
+              <CurrentConditions conditions={data.current} city={data.location.city} state={data.location.state} isDaytime={data.current.isDaytime} />
+            )}
+            {data && data.alerts.length > 0 && <Alerts alerts={data.alerts} selectedIdx={selectedAlertIdx} expandedId={expandedAlertId} onExpand={(id) => setExpandedAlertId((prev) => (prev === id ? null : id))} />}
+          </box>
 
-        <box style={{ flexDirection: "column", gap: 1, flexGrow: 1, flexShrink: 1, minWidth: 1 }}>
-          <Forecast periods={data?.forecast ?? []} />
-          {data && data.radar?.url?.trim() && <Radar radarUrl={data.radar.url} />}
+          <box style={{ flexDirection: "column", gap: 1, flexGrow: 1, flexShrink: 1, minWidth: 1, ...(focusedPanel === "forecast" ? { border: true } : {}) }}>
+            <Forecast
+              periods={data?.forecast ?? []}
+              selectedForecastIdx={selectedForecastIdx}
+              onSelectForecastIdx={setSelectedForecastIdx}
+              showHourly={showHourly}
+              hourlyPeriods={hourlyPeriods}
+              uniqueDays={data ? getUniqueDays(data.forecast) : []}
+              onScrollboxReady={(handle) => { forecastScrollRef.current = handle; }}
+              focusedPanel={focusedPanel}
+            />
+            {data && data.radar?.url?.trim() && <Radar radarUrl={data.radar.url} />}
+          </box>
         </box>
-      </box>
     </box>
   );
 }

@@ -144,6 +144,7 @@ export function Radar({ radarUrl }: { radarUrl?: string }) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      if (!radarUrl) return;
       try {
         const resp = await fetchWithLog(radarUrl, "Radar", {});
         const buffer = new Uint8Array(await resp.arrayBuffer());
